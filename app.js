@@ -1,4 +1,5 @@
 const STORAGE_KEY = "playmarker-board-state";
+const POSITION_OPTIONS = ["defensa", "medio", "delantero"];
 const DEFAULT_POSITION = {
   pitch: {
     home: { x: 50, y: 72 },
@@ -67,6 +68,7 @@ function loadPlayers() {
       .filter(isValidStoredPlayer)
       .map((player) => ({
         ...player,
+        position: normalizePosition(player.position),
         zone: player.zone === "bench" ? "bench" : "pitch",
         x: clamp(player.x, 6, 94),
         y: clamp(player.y, 6, 94),
@@ -103,7 +105,7 @@ function handleFormSubmit(event) {
     id: String(formData.get("playerId") || "").trim(),
     name: String(formData.get("name") || "").trim(),
     number: String(formData.get("number") || "").trim(),
-    position: String(formData.get("position") || "").trim(),
+    position: normalizePosition(formData.get("position")),
     team: String(formData.get("team") || "home"),
   };
 
@@ -158,6 +160,10 @@ function validatePlayer(player) {
 
   if (!player.position) {
     return "La posicion es obligatoria.";
+  }
+
+  if (!POSITION_OPTIONS.includes(player.position)) {
+    return "La posicion debe ser defensa, medio o delantero.";
   }
 
   if (player.team !== "home" && player.team !== "away") {
@@ -221,6 +227,7 @@ function clearSelection() {
   state.selectedPlayerId = null;
   clearError();
   elements.playerForm.reset();
+  elements.playerPosition.value = "defensa";
   elements.playerTeam.value = "home";
   render();
 }
@@ -229,6 +236,7 @@ function resetForm() {
   state.selectedPlayerId = null;
   clearError();
   elements.playerForm.reset();
+  elements.playerPosition.value = "defensa";
   elements.playerTeam.value = "home";
   syncForm();
   renderPlayers();
@@ -246,6 +254,7 @@ function syncForm() {
     elements.playerId.value = "";
     if (!document.activeElement || document.activeElement === document.body) {
       elements.playerForm.reset();
+      elements.playerPosition.value = "defensa";
       elements.playerTeam.value = "home";
     }
     return;
@@ -281,15 +290,19 @@ function renderPlayerList() {
     const deleteButton = item.querySelector(".delete-button");
     const selected = player.id === state.selectedPlayerId;
     const teamLabel = player.team === "home" ? "Local" : "Visita";
+    const positionLabel = formatPosition(player.position);
+    const positionStyle = getPositionStyle(player.position);
 
     summaryButton.classList.toggle("is-active", selected);
+    summaryButton.style.setProperty("--player-position-accent", positionStyle.accent);
+    summaryButton.style.setProperty("--player-position-border", positionStyle.border);
     summaryButton.innerHTML = `
       <div class="summary-top">
         <span class="summary-name">${escapeHtml(player.name)}</span>
         <span class="summary-number">#${escapeHtml(player.number)}</span>
       </div>
       <div class="summary-bottom">
-        <span>${escapeHtml(player.position)}</span>
+        <span class="summary-position position-${player.position}">${positionLabel}</span>
         <span class="summary-team team-${player.team}">${teamLabel}</span>
       </div>
     `;
@@ -317,6 +330,7 @@ function renderPlayers() {
     marker.dataset.playerId = player.id;
     marker.dataset.team = player.team;
     marker.dataset.zone = player.zone;
+    marker.dataset.position = player.position;
     marker.style.left = `${player.x}%`;
     marker.style.top = `${player.y}%`;
     marker.classList.toggle("is-selected", player.id === state.selectedPlayerId);
@@ -413,6 +427,51 @@ function showError(message) {
 
 function clearError() {
   elements.formError.textContent = "";
+}
+
+function normalizePosition(value) {
+  const normalized = String(value || "")
+    .trim()
+    .toLowerCase();
+
+  if (normalized === "defensa" || normalized === "medio" || normalized === "delantero") {
+    return normalized;
+  }
+
+  return "";
+}
+
+function formatPosition(position) {
+  if (position === "defensa") {
+    return "Defensa";
+  }
+
+  if (position === "medio") {
+    return "Medio";
+  }
+
+  return "Delantero";
+}
+
+function getPositionStyle(position) {
+  if (position === "defensa") {
+    return {
+      accent: "rgba(34, 197, 94, 0.45)",
+      border: "rgba(34, 197, 94, 0.28)",
+    };
+  }
+
+  if (position === "medio") {
+    return {
+      accent: "rgba(245, 158, 11, 0.45)",
+      border: "rgba(245, 158, 11, 0.28)",
+    };
+  }
+
+  return {
+    accent: "rgba(239, 68, 68, 0.45)",
+    border: "rgba(239, 68, 68, 0.28)",
+  };
 }
 
 function clamp(value, min, max) {

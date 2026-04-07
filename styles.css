@@ -13,6 +13,15 @@
   --home-dark: #7a4a00;
   --away: #1d4ed8;
   --away-dark: #dbeafe;
+  --position-defensa: #22c55e;
+  --position-defensa-bg: rgba(34, 197, 94, 0.16);
+  --position-defensa-text: #166534;
+  --position-medio: #f59e0b;
+  --position-medio-bg: rgba(245, 158, 11, 0.16);
+  --position-medio-text: #92400e;
+  --position-delantero: #ef4444;
+  --position-delantero-bg: rgba(239, 68, 68, 0.16);
+  --position-delantero-text: #991b1b;
   --shadow: 0 20px 45px rgba(70, 38, 8, 0.16);
   font-family: "Manrope", sans-serif;
 }
@@ -144,7 +153,7 @@ h2 {
 
 .player-summary {
   width: 100%;
-  border: 1px solid rgba(87, 70, 54, 0.12);
+  border: 1px solid var(--player-position-border, rgba(87, 70, 54, 0.12));
   background: rgba(255, 255, 255, 0.75);
   border-radius: 18px;
   padding: 10px 12px;
@@ -155,7 +164,7 @@ h2 {
 .player-summary:hover,
 .player-summary.is-active {
   transform: translateY(-1px);
-  border-color: rgba(202, 93, 45, 0.35);
+  border-color: var(--player-position-accent, rgba(202, 93, 45, 0.35));
   box-shadow: 0 12px 22px rgba(70, 38, 8, 0.08);
 }
 
@@ -387,6 +396,7 @@ form {
   font-weight: 700;
   border: 3px solid rgba(255, 255, 255, 0.75);
   box-shadow: 0 12px 20px rgba(0, 0, 0, 0.18);
+  position: relative;
 }
 
 .player-name {
@@ -413,8 +423,33 @@ form {
   color: var(--away-dark);
 }
 
+.player-token::after {
+  content: "";
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.88);
+  background: var(--position-accent, rgba(255, 255, 255, 0.9));
+  box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
+}
+
 .player-marker[data-zone="bench"] .player-name {
   background: rgba(29, 26, 22, 0.64);
+}
+
+.player-marker[data-position="defensa"] {
+  --position-accent: var(--position-defensa);
+}
+
+.player-marker[data-position="medio"] {
+  --position-accent: var(--position-medio);
+}
+
+.player-marker[data-position="delantero"] {
+  --position-accent: var(--position-delantero);
 }
 
 .player-marker.is-selected .player-token {
@@ -495,7 +530,8 @@ form {
 }
 
 .summary-number,
-.summary-team {
+.summary-team,
+.summary-position {
   border-radius: 999px;
   padding: 3px 8px;
   font-size: 0.8rem;
@@ -510,6 +546,21 @@ form {
 .summary-team.team-away {
   background: rgba(29, 78, 216, 0.16);
   color: #133487;
+}
+
+.summary-position.position-defensa {
+  background: var(--position-defensa-bg);
+  color: var(--position-defensa-text);
+}
+
+.summary-position.position-medio {
+  background: var(--position-medio-bg);
+  color: var(--position-medio-text);
+}
+
+.summary-position.position-delantero {
+  background: var(--position-delantero-bg);
+  color: var(--position-delantero-text);
 }
 
 @media (max-width: 1040px) {
