@@ -1,0 +1,501 @@
+:root {
+  --bg: #f6efe3;
+  --panel: rgba(255, 250, 241, 0.88);
+  --panel-border: rgba(107, 72, 34, 0.12);
+  --text: #1d1a16;
+  --muted: #6e6254;
+  --accent: #ca5d2d;
+  --accent-dark: #8e3412;
+  --field: #0b6a3e;
+  --field-dark: #084e2e;
+  --line: rgba(249, 255, 248, 0.92);
+  --home: #ffb703;
+  --home-dark: #7a4a00;
+  --away: #1d4ed8;
+  --away-dark: #dbeafe;
+  --shadow: 0 20px 45px rgba(70, 38, 8, 0.16);
+  font-family: "Manrope", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: var(--text);
+  background:
+    radial-gradient(circle at top left, rgba(255, 196, 123, 0.55), transparent 25%),
+    radial-gradient(circle at bottom right, rgba(22, 163, 74, 0.2), transparent 30%),
+    linear-gradient(135deg, #f6efe3 0%, #efe3cf 100%);
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.app-shell {
+  display: grid;
+  grid-template-columns: minmax(320px, 400px) 1fr;
+  min-height: 100vh;
+}
+
+.sidebar {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.brand-card,
+.panel,
+.pitch-frame {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 24px;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(10px);
+}
+
+.brand-card {
+  padding: 24px;
+}
+
+.eyebrow {
+  margin: 0 0 6px;
+  color: var(--accent-dark);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+h1,
+h2 {
+  margin: 0;
+  font-family: "Barlow Condensed", sans-serif;
+  letter-spacing: 0.02em;
+}
+
+h1 {
+  font-size: clamp(2.4rem, 4vw, 3.2rem);
+}
+
+h2 {
+  font-size: clamp(1.6rem, 2.2vw, 2.1rem);
+}
+
+.subtitle,
+.board-tip,
+.empty-state {
+  margin: 10px 0 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.panel {
+  padding: 20px;
+}
+
+.panel-heading,
+.board-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 16px;
+}
+
+.form-heading {
+  margin-bottom: 18px;
+}
+
+.player-list {
+  list-style: none;
+  padding: 0;
+  margin: 18px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.player-item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.player-summary {
+  width: 100%;
+  border: 1px solid rgba(87, 70, 54, 0.12);
+  background: rgba(255, 255, 255, 0.75);
+  border-radius: 18px;
+  padding: 12px 14px;
+  text-align: left;
+  transition: transform 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.player-summary:hover,
+.player-summary.is-active {
+  transform: translateY(-1px);
+  border-color: rgba(202, 93, 45, 0.35);
+  box-shadow: 0 12px 22px rgba(70, 38, 8, 0.08);
+}
+
+.player-item-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.icon-button,
+.ghost-button,
+.primary-button,
+.danger-button {
+  border: 0;
+  border-radius: 999px;
+  padding: 10px 14px;
+  font-weight: 700;
+}
+
+.icon-button,
+.ghost-button {
+  background: rgba(87, 70, 54, 0.08);
+  color: var(--text);
+}
+
+.primary-button {
+  background: linear-gradient(135deg, var(--accent) 0%, #e08944 100%);
+  color: #fff7ef;
+}
+
+.danger-button {
+  background: rgba(158, 34, 34, 0.12);
+  color: #8f1d1d;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.field input,
+.field select {
+  width: 100%;
+  border: 1px solid rgba(107, 72, 34, 0.18);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.78);
+  padding: 12px 14px;
+  color: var(--text);
+}
+
+.field input:focus,
+.field select:focus {
+  outline: 2px solid rgba(202, 93, 45, 0.2);
+  border-color: rgba(202, 93, 45, 0.45);
+}
+
+.form-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.form-error {
+  min-height: 1.2em;
+  margin: 0;
+  color: #9f1d1d;
+  font-size: 0.92rem;
+}
+
+.board-section {
+  padding: 24px 24px 24px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.pitch-frame {
+  flex: 1;
+  padding: 20px;
+  min-height: 620px;
+}
+
+.pitch {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 580px;
+  border-radius: 32px;
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.07), transparent),
+    repeating-linear-gradient(
+      90deg,
+      var(--field) 0,
+      var(--field) 8%,
+      var(--field-dark) 8%,
+      var(--field-dark) 16%
+    );
+}
+
+.pitch-markings,
+.players-layer {
+  position: absolute;
+  inset: 0;
+}
+
+.half-line,
+.center-circle,
+.center-dot,
+.penalty-box,
+.goal-box,
+.penalty-spot {
+  position: absolute;
+  border-color: var(--line);
+}
+
+.half-line {
+  top: 50%;
+  left: 0;
+  width: 100%;
+  border-top: 3px solid var(--line);
+  transform: translateY(-50%);
+}
+
+.center-circle {
+  top: 50%;
+  left: 50%;
+  width: 18%;
+  aspect-ratio: 1;
+  border: 3px solid var(--line);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.center-dot,
+.penalty-spot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--line);
+}
+
+.center-dot {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.penalty-box {
+  left: 20%;
+  width: 60%;
+  height: 17%;
+  border: 3px solid var(--line);
+}
+
+.goal-box {
+  left: 32%;
+  width: 36%;
+  height: 7%;
+  border: 3px solid var(--line);
+}
+
+.penalty-box.top,
+.goal-box.top {
+  top: 0;
+  border-top: 0;
+}
+
+.penalty-box.bottom,
+.goal-box.bottom {
+  bottom: 0;
+  border-bottom: 0;
+}
+
+.penalty-spot.top {
+  top: 11%;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.penalty-spot.bottom {
+  bottom: 11%;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.player-marker {
+  position: absolute;
+  width: 86px;
+  transform: translate(-50%, -50%);
+  border: 0;
+  background: transparent;
+  touch-action: none;
+  user-select: none;
+}
+
+.player-chip {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+}
+
+.player-token {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-family: "Barlow Condensed", sans-serif;
+  font-size: 1.5rem;
+  font-weight: 700;
+  border: 3px solid rgba(255, 255, 255, 0.75);
+  box-shadow: 0 12px 20px rgba(0, 0, 0, 0.18);
+}
+
+.player-name {
+  max-width: 100%;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  line-height: 1.2;
+  color: #fff;
+  text-align: center;
+  background: rgba(6, 11, 8, 0.38);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.player-marker[data-team="home"] .player-token {
+  background: radial-gradient(circle at top, #ffd572 0%, var(--home) 65%, #cc8a00 100%);
+  color: var(--home-dark);
+}
+
+.player-marker[data-team="away"] .player-token {
+  background: radial-gradient(circle at top, #6ba1ff 0%, var(--away) 62%, #163693 100%);
+  color: var(--away-dark);
+}
+
+.player-marker.is-selected .player-token {
+  outline: 4px solid rgba(255, 255, 255, 0.5);
+  outline-offset: 2px;
+}
+
+.summary-top,
+.summary-bottom {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: center;
+}
+
+.summary-top {
+  margin-bottom: 8px;
+}
+
+.summary-name {
+  font-weight: 700;
+}
+
+.summary-number,
+.summary-team {
+  border-radius: 999px;
+  padding: 3px 8px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.summary-team.team-home {
+  background: rgba(255, 183, 3, 0.18);
+  color: #8a5600;
+}
+
+.summary-team.team-away {
+  background: rgba(29, 78, 216, 0.16);
+  color: #133487;
+}
+
+@media (max-width: 1040px) {
+  .app-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar,
+  .board-section {
+    padding: 20px;
+  }
+
+  .board-section {
+    padding-top: 0;
+  }
+}
+
+@media (max-width: 720px) {
+  .sidebar,
+  .board-section {
+    padding: 16px;
+  }
+
+  .panel-heading,
+  .board-header,
+  .player-item {
+    grid-template-columns: 1fr;
+  }
+
+  .player-item {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .player-item-actions,
+  .form-actions {
+    width: 100%;
+  }
+
+  .player-item-actions > button,
+  .form-actions > button {
+    flex: 1;
+  }
+
+  .pitch-frame {
+    min-height: 500px;
+    padding: 14px;
+  }
+
+  .pitch {
+    min-height: 470px;
+    border-radius: 24px;
+  }
+
+  .player-marker {
+    width: 74px;
+  }
+
+  .player-token {
+    width: 50px;
+    height: 50px;
+    font-size: 1.3rem;
+  }
+}
