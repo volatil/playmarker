@@ -1,5 +1,34 @@
 const POSITION_OPTIONS = ["arquero", "defensa", "medio", "delantero"];
-const PLAYER_QUERY_KEY = "player";
+const STATE_QUERY_KEY = "s";
+const LEGACY_PLAYER_QUERY_KEY = "player";
+const POSITION_CODES = {
+  arquero: "0",
+  defensa: "1",
+  medio: "2",
+  delantero: "3",
+};
+const CODE_TO_POSITION = {
+  0: "arquero",
+  1: "defensa",
+  2: "medio",
+  3: "delantero",
+};
+const TEAM_CODES = {
+  home: "h",
+  away: "a",
+};
+const CODE_TO_TEAM = {
+  h: "home",
+  a: "away",
+};
+const ZONE_CODES = {
+  pitch: "p",
+  bench: "b",
+};
+const CODE_TO_ZONE = {
+  p: "pitch",
+  b: "bench",
+};
 const DEFAULT_POSITION = {
   pitch: {
     home: { x: 50, y: 72 },
@@ -67,7 +96,15 @@ window.addEventListener("resize", renderPlayers);
 function loadPlayers() {
   try {
     const searchParams = new URLSearchParams(window.location.search);
-    const serializedPlayers = searchParams.getAll(PLAYER_QUERY_KEY);
+    const compactState = searchParams.get(STATE_QUERY_KEY);
+    if (compactState) {
+      const parsedCompactState = parseCompactState(compactState);
+      if (parsedCompactState.length > 0) {
+        return parsedCompactState;
+      }
+    }
+
+    const serializedPlayers = searchParams.getAll(LEGACY_PLAYER_QUERY_KEY);
     if (serializedPlayers.length === 0) {
       return [];
     }
@@ -78,6 +115,51 @@ function loadPlayers() {
   } catch (error) {
     return [];
   }
+}
+
+function parseCompactState(value) {
+  try {
+    const decoded = decodeBase64Url(value);
+    const parsed = JSON.parse(decoded);
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+
+    return parsed
+      .map(parseCompactPlayer)
+      .filter(Boolean);
+  } catch (error) {
+    return [];
+  }
+}
+
+function parseCompactPlayer(player) {
+  if (!Array.isArray(player) || player.length !== 8) {
+    return null;
+  }
+
+  const [id, name, number, positionCode, teamCode, zoneCode, x, y] = player;
+  const parsedPlayer = {
+    id: String(id || ""),
+    name: String(name || ""),
+    number: String(number || ""),
+    position: CODE_TO_POSITION[String(positionCode || "")] || "",
+    team: CODE_TO_TEAM[String(teamCode || "")] || "",
+    zone: CODE_TO_ZONE[String(zoneCode || "")] || "",
+    x: Number(x),
+    y: Number(y),
+  };
+
+  if (!isValidUrlPlayer(parsedPlayer)) {
+    return null;
+  }
+
+  return {
+    ...parsedPlayer,
+    position: normalizePosition(parsedPlayer.position),
+    zone: parsedPlayer.zone === "bench" ? "bench" : "pitch",
+    ...clampPlacementCoordinates(parsedPlayer.zone, parsedPlayer.x, parsedPlayer.y),
+  };
 }
 
 function parsePlayerParam(value) {
@@ -136,32 +218,23 @@ function isValidUrlPlayer(player) {
   );
 }
 
-function serializePlayer(player) {
+function serializeCompactPlayer(player) {
   return [
     player.id,
     player.name,
     player.number,
-    player.position,
-    player.team,
-    player.zone,
-    formatCoordinate(player.x),
-    formatCoordinate(player.y),
-  ]
-    .map((part) => encodeURIComponent(String(part)))
-    .join(",");
-}
-
-function formatCoordinate(value) {
-  return String(Math.round(value * 100) / 100);
+    POSITION_CODES[player.position],
+    TEAM_CODES[player.team],
+    ZONE_CODES[player.zone],
+    player.x,
+    player.y,
+  ];
 }
 
 function syncUrlFromState() {
   const nextUrl = new URL(window.location.href);
-  nextUrl.search = "";
-
-  state.players.forEach((player) => {
-    nextUrl.searchParams.append(PLAYER_QUERY_KEY, serializePlayer(player));
-  });
+  const compactState = state.players.map(serializeCompactPlayer);
+  nextUrl.search = compactState.length > 0 ? `?${STATE_QUERY_KEY}=${encodeBase64Url(JSON.stringify(compactState))}` : "";
 
   const nextRelativeUrl = `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`;
   const currentRelativeUrl = `${window.location.pathname}${window.location.search}${window.location.hash}`;
@@ -169,6 +242,28 @@ function syncUrlFromState() {
   if (nextRelativeUrl !== currentRelativeUrl) {
     history.replaceState(null, "", nextRelativeUrl);
   }
+}
+
+function encodeBase64Url(value) {
+  const bytes = new TextEncoder().encode(value);
+  let binary = "";
+  bytes.forEach((byte) => {
+    binary += String.fromCharCode(byte);
+  });
+  return btoa(binary)
+    .replaceAll("+", "-")
+    .replaceAll("/", "_")
+    .replace(/=+$/u, "");
+}
+
+function decodeBase64Url(value) {
+  const normalized = value
+    .replaceAll("-", "+")
+    .replaceAll("_", "/");
+  const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=");
+  const binary = atob(padded);
+  const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+  return new TextDecoder().decode(bytes);
 }
 
 function handleFormSubmit(event) {
@@ -579,11 +674,14 @@ function escapeHtml(value) {
 }
 
 function createPlayerId() {
-  if (window.crypto && typeof window.crypto.randomUUID === "function") {
-    return window.crypto.randomUUID();
+  if (window.crypto && typeof window.crypto.getRandomValues === "function") {
+    const randomBytes = new Uint8Array(4);
+    window.crypto.getRandomValues(randomBytes);
+    const randomSuffix = Array.from(randomBytes, (byte) => byte.toString(36).padStart(2, "0")).join("");
+    return `p${Date.now().toString(36)}${randomSuffix}`;
   }
 
-  return `player-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  return `p${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`;
 }
 
 function resolveBoardPlacement(event) {
