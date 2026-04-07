@@ -1,5 +1,5 @@
-const STORAGE_KEY = "playmarker-board-state";
 const POSITION_OPTIONS = ["arquero", "defensa", "medio", "delantero"];
+const PLAYER_QUERY_KEY = "player";
 const DEFAULT_POSITION = {
   pitch: {
     home: { x: 50, y: 72 },
@@ -41,6 +41,7 @@ const elements = {
 };
 
 render();
+syncUrlFromState();
 
 elements.playerForm.addEventListener("submit", handleFormSubmit);
 elements.deleteButton.addEventListener("click", handleDeleteSelected);
@@ -54,46 +55,110 @@ window.addEventListener("resize", renderPlayers);
 
 function loadPlayers() {
   try {
-    const rawState = localStorage.getItem(STORAGE_KEY);
-    if (!rawState) {
+    const searchParams = new URLSearchParams(window.location.search);
+    const serializedPlayers = searchParams.getAll(PLAYER_QUERY_KEY);
+    if (serializedPlayers.length === 0) {
       return [];
     }
 
-    const parsed = JSON.parse(rawState);
-    if (!Array.isArray(parsed)) {
-      return [];
-    }
-
-    return parsed
-      .filter(isValidStoredPlayer)
-      .map((player) => ({
-        ...player,
-        position: normalizePosition(player.position),
-        zone: player.zone === "bench" ? "bench" : "pitch",
-        x: clamp(player.x, 6, 94),
-        y: clamp(player.y, 6, 94),
-      }));
+    return serializedPlayers
+      .map(parsePlayerParam)
+      .filter(Boolean);
   } catch (error) {
     return [];
   }
 }
 
-function isValidStoredPlayer(player) {
+function parsePlayerParam(value) {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const parts = value.split(",");
+  if (parts.length !== 8) {
+    return null;
+  }
+
+  let decodedParts;
+  try {
+    decodedParts = parts.map((part) => decodeURIComponent(part));
+  } catch (error) {
+    return null;
+  }
+
+  const [id, name, number, position, team, zone, x, y] = decodedParts;
+  const parsedPlayer = {
+    id,
+    name,
+    number,
+    position,
+    team,
+    zone,
+    x: Number(x),
+    y: Number(y),
+  };
+
+  if (!isValidUrlPlayer(parsedPlayer)) {
+    return null;
+  }
+
+  return {
+    ...parsedPlayer,
+    position: normalizePosition(parsedPlayer.position),
+    zone: parsedPlayer.zone === "bench" ? "bench" : "pitch",
+    x: clamp(parsedPlayer.x, 6, 94),
+    y: clamp(parsedPlayer.y, 12, 88),
+  };
+}
+
+function isValidUrlPlayer(player) {
   return (
     player &&
     typeof player.id === "string" &&
+    player.id.trim() !== "" &&
     typeof player.name === "string" &&
     typeof player.number === "string" &&
     typeof player.position === "string" &&
-    (player.zone === undefined || player.zone === "pitch" || player.zone === "bench") &&
+    (player.zone === "pitch" || player.zone === "bench") &&
     (player.team === "home" || player.team === "away") &&
     Number.isFinite(player.x) &&
     Number.isFinite(player.y)
   );
 }
 
-function savePlayers() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state.players));
+function serializePlayer(player) {
+  return [
+    player.id,
+    player.name,
+    player.number,
+    player.position,
+    player.team,
+    player.zone,
+    formatCoordinate(player.x),
+    formatCoordinate(player.y),
+  ]
+    .map((part) => encodeURIComponent(String(part)))
+    .join(",");
+}
+
+function formatCoordinate(value) {
+  return String(Math.round(value * 100) / 100);
+}
+
+function syncUrlFromState() {
+  const nextUrl = new URL(window.location.href);
+  nextUrl.search = "";
+
+  state.players.forEach((player) => {
+    nextUrl.searchParams.append(PLAYER_QUERY_KEY, serializePlayer(player));
+  });
+
+  const nextRelativeUrl = `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`;
+  const currentRelativeUrl = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+
+  if (nextRelativeUrl !== currentRelativeUrl) {
+    history.replaceState(null, "", nextRelativeUrl);
+  }
 }
 
 function handleFormSubmit(event) {
@@ -144,7 +209,7 @@ function handleFormSubmit(event) {
     state.selectedPlayerId = null;
   }
 
-  savePlayers();
+  syncUrlFromState();
   if (!payload.id) {
     elements.playerForm.reset();
     elements.playerPosition.value = "arquero";
@@ -196,7 +261,7 @@ function handleDeleteSelected() {
 
   state.players = state.players.filter((player) => player.id !== state.selectedPlayerId);
   state.selectedPlayerId = null;
-  savePlayers();
+  syncUrlFromState();
   render();
 }
 
@@ -205,7 +270,7 @@ function handleDeletePlayer(playerId) {
   if (state.selectedPlayerId === playerId) {
     state.selectedPlayerId = null;
   }
-  savePlayers();
+  syncUrlFromState();
   render();
 }
 
@@ -214,7 +279,7 @@ function handleResetBoard() {
   state.selectedPlayerId = null;
   state.draggingPlayerId = null;
   state.dragPointerId = null;
-  localStorage.removeItem(STORAGE_KEY);
+  syncUrlFromState();
   render();
 }
 
@@ -391,7 +456,7 @@ function stopDragging(event) {
 
   state.draggingPlayerId = null;
   state.dragPointerId = null;
-  savePlayers();
+  syncUrlFromState();
   renderPlayers();
 }
 
