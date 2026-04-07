@@ -589,7 +589,7 @@ function createPlayerId() {
 function resolveBoardPlacement(event) {
   const areas = [
     { zone: "pitch", rect: elements.pitch.getBoundingClientRect() },
-    { zone: "bench", rect: elements.bench.getBoundingClientRect() },
+    { zone: "bench", rect: elements.benchLayer.getBoundingClientRect() },
   ];
 
   const containingArea =
