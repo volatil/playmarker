@@ -1,7 +1,13 @@
 const STORAGE_KEY = "playmarker-board-state";
 const DEFAULT_POSITION = {
-  home: { x: 50, y: 72 },
-  away: { x: 50, y: 28 },
+  pitch: {
+    home: { x: 50, y: 72 },
+    away: { x: 50, y: 28 },
+  },
+  bench: {
+    home: { x: 18, y: 50 },
+    away: { x: 18, y: 78 },
+  },
 };
 
 const state = {
@@ -21,7 +27,9 @@ const elements = {
   playerList: document.querySelector("#player-list"),
   emptyState: document.querySelector("#empty-state"),
   playersLayer: document.querySelector("#players-layer"),
+  benchLayer: document.querySelector("#bench-layer"),
   pitch: document.querySelector("#pitch"),
+  bench: document.querySelector("#bench"),
   formTitle: document.querySelector("#form-title"),
   submitButton: document.querySelector("#submit-button"),
   deleteButton: document.querySelector("#delete-player"),
@@ -58,6 +66,7 @@ function loadPlayers() {
       .filter(isValidStoredPlayer)
       .map((player) => ({
         ...player,
+        zone: player.zone === "bench" ? "bench" : "pitch",
         x: clamp(player.x, 6, 94),
         y: clamp(player.y, 6, 94),
       }));
@@ -73,6 +82,7 @@ function isValidStoredPlayer(player) {
     typeof player.name === "string" &&
     typeof player.number === "string" &&
     typeof player.position === "string" &&
+    (player.zone === undefined || player.zone === "pitch" || player.zone === "bench") &&
     (player.team === "home" || player.team === "away") &&
     Number.isFinite(player.x) &&
     Number.isFinite(player.y)
@@ -123,6 +133,7 @@ function handleFormSubmit(event) {
       number: payload.number,
       position: payload.position,
       team: payload.team,
+      zone: "pitch",
       x,
       y,
     };
@@ -156,8 +167,8 @@ function validatePlayer(player) {
 }
 
 function getNextSpawnPosition(team) {
-  const teamPlayers = state.players.filter((player) => player.team === team);
-  const base = DEFAULT_POSITION[team];
+  const teamPlayers = state.players.filter((player) => player.team === team && player.zone === "pitch");
+  const base = DEFAULT_POSITION.pitch[team];
   const row = Math.floor(teamPlayers.length / 4);
   const column = teamPlayers.length % 4;
   const x = clamp(base.x - 24 + column * 16, 10, 90);
@@ -282,7 +293,9 @@ function renderPlayerList() {
 
 function renderPlayers() {
   elements.playersLayer.innerHTML = "";
+  elements.benchLayer.innerHTML = "";
   const fragment = document.createDocumentFragment();
+  const benchFragment = document.createDocumentFragment();
 
   state.players.forEach((player) => {
     const marker = document.createElement("button");
@@ -290,6 +303,7 @@ function renderPlayers() {
     marker.className = "player-marker";
     marker.dataset.playerId = player.id;
     marker.dataset.team = player.team;
+    marker.dataset.zone = player.zone;
     marker.style.left = `${player.x}%`;
     marker.style.top = `${player.y}%`;
     marker.classList.toggle("is-selected", player.id === state.selectedPlayerId);
@@ -307,10 +321,16 @@ function renderPlayers() {
     });
 
     marker.addEventListener("pointerdown", (event) => startDragging(event, player.id));
-    fragment.appendChild(marker);
+
+    if (player.zone === "bench") {
+      benchFragment.appendChild(marker);
+    } else {
+      fragment.appendChild(marker);
+    }
   });
 
   elements.playersLayer.appendChild(fragment);
+  elements.benchLayer.appendChild(benchFragment);
 }
 
 function startDragging(event, playerId) {
@@ -344,16 +364,15 @@ function stopDragging(event) {
 }
 
 function updatePlayerPosition(playerId, event) {
-  const pitchRect = elements.pitch.getBoundingClientRect();
-  const x = clamp(((event.clientX - pitchRect.left) / pitchRect.width) * 100, 6, 94);
-  const y = clamp(((event.clientY - pitchRect.top) / pitchRect.height) * 100, 6, 94);
+  const nextPlacement = resolveBoardPlacement(event);
 
   state.players = state.players.map((player) =>
     player.id === playerId
       ? {
           ...player,
-          x,
-          y,
+          zone: nextPlacement.zone,
+          x: nextPlacement.x,
+          y: nextPlacement.y,
         }
       : player
   );
@@ -388,4 +407,36 @@ function createPlayerId() {
   }
 
   return `player-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function resolveBoardPlacement(event) {
+  const areas = [
+    { zone: "pitch", rect: elements.pitch.getBoundingClientRect() },
+    { zone: "bench", rect: elements.bench.getBoundingClientRect() },
+  ];
+
+  const containingArea =
+    areas.find(({ rect }) => isPointWithinRect(event.clientX, event.clientY, rect)) || nearestArea(event.clientX, event.clientY, areas);
+
+  return {
+    zone: containingArea.zone,
+    x: clamp(((event.clientX - containingArea.rect.left) / containingArea.rect.width) * 100, 6, 94),
+    y: clamp(((event.clientY - containingArea.rect.top) / containingArea.rect.height) * 100, 12, 88),
+  };
+}
+
+function isPointWithinRect(x, y, rect) {
+  return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
+}
+
+function nearestArea(x, y, areas) {
+  return areas.reduce((closest, area) => {
+    const centerX = area.rect.left + area.rect.width / 2;
+    const centerY = area.rect.top + area.rect.height / 2;
+    const distance = Math.hypot(x - centerX, y - centerY);
+    if (!closest || distance < closest.distance) {
+      return { ...area, distance };
+    }
+    return closest;
+  }, null);
 }

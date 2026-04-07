@@ -85,19 +85,32 @@
       </div>
 
       <section class="pitch-frame">
-        <div class="pitch" id="pitch" aria-label="Cancha de futbol interactiva">
-          <div class="pitch-markings">
-            <div class="half-line"></div>
-            <div class="center-circle"></div>
-            <div class="center-dot"></div>
-            <div class="penalty-box top"></div>
-            <div class="goal-box top"></div>
-            <div class="penalty-spot top"></div>
-            <div class="penalty-box bottom"></div>
-            <div class="goal-box bottom"></div>
-            <div class="penalty-spot bottom"></div>
+        <div class="board-layout">
+          <div class="pitch" id="pitch" aria-label="Cancha de futbol interactiva">
+            <div class="pitch-markings">
+              <div class="half-line"></div>
+              <div class="center-circle"></div>
+              <div class="center-dot"></div>
+              <div class="penalty-box top"></div>
+              <div class="goal-box top"></div>
+              <div class="penalty-spot top"></div>
+              <div class="penalty-box bottom"></div>
+              <div class="goal-box bottom"></div>
+              <div class="penalty-spot bottom"></div>
+            </div>
+            <div class="players-layer" id="players-layer"></div>
           </div>
-          <div class="players-layer" id="players-layer"></div>
+
+          <div class="bench" id="bench" aria-label="Zona de banca">
+            <div class="bench-header">
+              <p class="eyebrow">Banca</p>
+              <p class="bench-tip">Arrastra jugadores aqui para dejarlos fuera de la cancha.</p>
+            </div>
+            <div class="bench-surface">
+              <div class="bench-markings"></div>
+              <div class="bench-layer" id="bench-layer"></div>
+            </div>
+          </div>
         </div>
       </section>
     </main>

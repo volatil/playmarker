@@ -240,11 +240,18 @@ form {
   min-height: 620px;
 }
 
+.board-layout {
+  display: grid;
+  grid-template-rows: minmax(420px, 1fr) 152px;
+  gap: 18px;
+  height: 100%;
+}
+
 .pitch {
   position: relative;
   width: 100%;
   height: 100%;
-  min-height: 580px;
+  min-height: 420px;
   border-radius: 32px;
   overflow: hidden;
   background:
@@ -259,7 +266,9 @@ form {
 }
 
 .pitch-markings,
-.players-layer {
+.players-layer,
+.bench-layer,
+.bench-markings {
   position: absolute;
   inset: 0;
 }
@@ -397,9 +406,68 @@ form {
   color: var(--away-dark);
 }
 
+.player-marker[data-zone="bench"] .player-name {
+  background: rgba(29, 26, 22, 0.64);
+}
+
 .player-marker.is-selected .player-token {
   outline: 4px solid rgba(255, 255, 255, 0.5);
   outline-offset: 2px;
+}
+
+.bench {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  gap: 14px;
+  align-items: stretch;
+}
+
+.bench-header {
+  padding: 18px;
+  border-radius: 22px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.6), rgba(240, 228, 210, 0.82));
+  border: 1px solid rgba(107, 72, 34, 0.12);
+}
+
+.bench-tip {
+  margin: 8px 0 0;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.bench-surface {
+  position: relative;
+  overflow: hidden;
+  border-radius: 26px;
+  border: 1px solid rgba(107, 72, 34, 0.14);
+  background:
+    linear-gradient(180deg, rgba(255, 252, 245, 0.96), rgba(233, 223, 204, 0.94)),
+    repeating-linear-gradient(
+      90deg,
+      rgba(107, 72, 34, 0.04) 0,
+      rgba(107, 72, 34, 0.04) 9%,
+      rgba(255, 255, 255, 0.16) 9%,
+      rgba(255, 255, 255, 0.16) 18%
+    );
+}
+
+.bench-markings::before,
+.bench-markings::after {
+  content: "";
+  position: absolute;
+  inset: 14px;
+  border-radius: 18px;
+}
+
+.bench-markings::before {
+  border: 2px dashed rgba(107, 72, 34, 0.18);
+}
+
+.bench-markings::after {
+  inset: auto 18px 18px 18px;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(107, 72, 34, 0.08);
 }
 
 .summary-top,
@@ -484,9 +552,17 @@ form {
     padding: 14px;
   }
 
+  .board-layout {
+    grid-template-rows: minmax(360px, 1fr) 208px;
+  }
+
   .pitch {
-    min-height: 470px;
+    min-height: 360px;
     border-radius: 24px;
+  }
+
+  .bench {
+    grid-template-columns: 1fr;
   }
 
   .player-marker {
