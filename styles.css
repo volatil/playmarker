@@ -267,6 +267,8 @@ form {
   flex: 1;
   min-height: 0;
   padding: 16px;
+  width: min(100%, 900px);
+  align-self: center;
 }
 
 .board-layout {
