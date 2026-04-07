@@ -11,6 +11,17 @@ const DEFAULT_POSITION = {
   },
 };
 
+const PLACEMENT_BOUNDS = {
+  pitch: {
+    x: { min: 5, max: 95 },
+    y: { min: 4, max: 96 },
+  },
+  bench: {
+    x: { min: 6, max: 94 },
+    y: { min: 12, max: 88 },
+  },
+};
+
 const state = {
   players: loadPlayers(),
   selectedPlayerId: null,
@@ -106,8 +117,7 @@ function parsePlayerParam(value) {
     ...parsedPlayer,
     position: normalizePosition(parsedPlayer.position),
     zone: parsedPlayer.zone === "bench" ? "bench" : "pitch",
-    x: clamp(parsedPlayer.x, 6, 94),
-    y: clamp(parsedPlayer.y, 12, 88),
+    ...clampPlacementCoordinates(parsedPlayer.zone, parsedPlayer.x, parsedPlayer.y),
   };
 }
 
@@ -587,8 +597,19 @@ function resolveBoardPlacement(event) {
 
   return {
     zone: containingArea.zone,
-    x: clamp(((event.clientX - containingArea.rect.left) / containingArea.rect.width) * 100, 6, 94),
-    y: clamp(((event.clientY - containingArea.rect.top) / containingArea.rect.height) * 100, 12, 88),
+    ...clampPlacementCoordinates(
+      containingArea.zone,
+      ((event.clientX - containingArea.rect.left) / containingArea.rect.width) * 100,
+      ((event.clientY - containingArea.rect.top) / containingArea.rect.height) * 100
+    ),
+  };
+}
+
+function clampPlacementCoordinates(zone, x, y) {
+  const bounds = PLACEMENT_BOUNDS[zone] || PLACEMENT_BOUNDS.pitch;
+  return {
+    x: clamp(x, bounds.x.min, bounds.x.max),
+    y: clamp(y, bounds.y.min, bounds.y.max),
   };
 }
 
