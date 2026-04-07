@@ -253,6 +253,10 @@ form {
 }
 
 .board-section {
+  position: sticky;
+  top: 0;
+  align-self: start;
+  height: 100vh;
   padding: 16px 16px 16px 0;
   display: flex;
   flex-direction: column;
@@ -261,13 +265,13 @@ form {
 
 .pitch-frame {
   flex: 1;
-  min-height: 520px;
+  min-height: 0;
   padding: 16px;
 }
 
 .board-layout {
   display: grid;
-  grid-template-rows: minmax(360px, 1fr) 112px;
+  grid-template-rows: minmax(0, 1fr) 104px;
   gap: 12px;
   height: 100%;
 }
@@ -276,7 +280,7 @@ form {
   position: relative;
   width: 100%;
   height: 100%;
-  min-height: 360px;
+  min-height: 0;
   border-radius: 32px;
   overflow: hidden;
   background:
@@ -592,6 +596,8 @@ form {
   }
 
   .board-section {
+    position: static;
+    height: auto;
     padding-top: 0;
   }
 
