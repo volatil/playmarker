@@ -13,6 +13,9 @@
   --home-dark: #7a4a00;
   --away: #1d4ed8;
   --away-dark: #dbeafe;
+  --position-arquero: #06b6d4;
+  --position-arquero-bg: rgba(6, 182, 212, 0.16);
+  --position-arquero-text: #155e75;
   --position-defensa: #22c55e;
   --position-defensa-bg: rgba(34, 197, 94, 0.16);
   --position-defensa-text: #166534;
@@ -446,6 +449,10 @@ form {
   background: rgba(29, 26, 22, 0.64);
 }
 
+.player-marker[data-position="arquero"] {
+  --position-accent: var(--position-arquero);
+}
+
 .player-marker[data-position="defensa"] {
   --position-accent: var(--position-defensa);
 }
@@ -552,6 +559,11 @@ form {
 .summary-team.team-away {
   background: rgba(29, 78, 216, 0.16);
   color: #133487;
+}
+
+.summary-position.position-arquero {
+  background: var(--position-arquero-bg);
+  color: var(--position-arquero-text);
 }
 
 .summary-position.position-defensa {

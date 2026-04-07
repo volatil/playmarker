@@ -1,5 +1,5 @@
 const STORAGE_KEY = "playmarker-board-state";
-const POSITION_OPTIONS = ["defensa", "medio", "delantero"];
+const POSITION_OPTIONS = ["arquero", "defensa", "medio", "delantero"];
 const DEFAULT_POSITION = {
   pitch: {
     home: { x: 50, y: 72 },
@@ -147,7 +147,7 @@ function handleFormSubmit(event) {
   savePlayers();
   if (!payload.id) {
     elements.playerForm.reset();
-    elements.playerPosition.value = "defensa";
+    elements.playerPosition.value = "arquero";
     elements.playerTeam.value = "home";
   }
   render();
@@ -168,7 +168,7 @@ function validatePlayer(player) {
   }
 
   if (!POSITION_OPTIONS.includes(player.position)) {
-    return "La posicion debe ser defensa, medio o delantero.";
+    return "La posicion debe ser arquero, defensa, medio o delantero.";
   }
 
   if (player.team !== "home" && player.team !== "away") {
@@ -232,7 +232,7 @@ function clearSelection() {
   state.selectedPlayerId = null;
   clearError();
   elements.playerForm.reset();
-  elements.playerPosition.value = "defensa";
+  elements.playerPosition.value = "arquero";
   elements.playerTeam.value = "home";
   render();
 }
@@ -241,7 +241,7 @@ function resetForm() {
   state.selectedPlayerId = null;
   clearError();
   elements.playerForm.reset();
-  elements.playerPosition.value = "defensa";
+  elements.playerPosition.value = "arquero";
   elements.playerTeam.value = "home";
   syncForm();
   renderPlayers();
@@ -259,7 +259,7 @@ function syncForm() {
     elements.playerId.value = "";
     if (!document.activeElement || document.activeElement === document.body) {
       elements.playerForm.reset();
-      elements.playerPosition.value = "defensa";
+      elements.playerPosition.value = "arquero";
       elements.playerTeam.value = "home";
     }
     return;
@@ -439,7 +439,7 @@ function normalizePosition(value) {
     .trim()
     .toLowerCase();
 
-  if (normalized === "defensa" || normalized === "medio" || normalized === "delantero") {
+  if (normalized === "arquero" || normalized === "defensa" || normalized === "medio" || normalized === "delantero") {
     return normalized;
   }
 
@@ -447,6 +447,10 @@ function normalizePosition(value) {
 }
 
 function formatPosition(position) {
+  if (position === "arquero") {
+    return "Arquero";
+  }
+
   if (position === "defensa") {
     return "Defensa";
   }
@@ -459,6 +463,13 @@ function formatPosition(position) {
 }
 
 function getPositionStyle(position) {
+  if (position === "arquero") {
+    return {
+      accent: "rgba(6, 182, 212, 0.45)",
+      border: "rgba(6, 182, 212, 0.28)",
+    };
+  }
+
   if (position === "defensa") {
     return {
       accent: "rgba(34, 197, 94, 0.45)",
