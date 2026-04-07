@@ -141,10 +141,15 @@ function handleFormSubmit(event) {
       y,
     };
     state.players = [...state.players, newPlayer];
-    state.selectedPlayerId = newPlayer.id;
+    state.selectedPlayerId = null;
   }
 
   savePlayers();
+  if (!payload.id) {
+    elements.playerForm.reset();
+    elements.playerPosition.value = "defensa";
+    elements.playerTeam.value = "home";
+  }
   render();
 }
 
