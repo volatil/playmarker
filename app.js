@@ -45,6 +45,7 @@ elements.playerForm.addEventListener("submit", handleFormSubmit);
 elements.deleteButton.addEventListener("click", handleDeleteSelected);
 elements.cancelEditButton.addEventListener("click", resetForm);
 elements.resetBoardButton.addEventListener("click", handleResetBoard);
+document.addEventListener("pointerdown", handleDocumentPointerDown);
 window.addEventListener("pointermove", handlePointerMove);
 window.addEventListener("pointerup", stopDragging);
 window.addEventListener("pointercancel", stopDragging);
@@ -212,6 +213,18 @@ function selectPlayer(playerId) {
   render();
 }
 
+function clearSelection() {
+  if (!state.selectedPlayerId) {
+    return;
+  }
+
+  state.selectedPlayerId = null;
+  clearError();
+  elements.playerForm.reset();
+  elements.playerTeam.value = "home";
+  render();
+}
+
 function resetForm() {
   state.selectedPlayerId = null;
   clearError();
@@ -361,6 +374,20 @@ function stopDragging(event) {
   state.dragPointerId = null;
   savePlayers();
   renderPlayers();
+}
+
+function handleDocumentPointerDown(event) {
+  if (!state.selectedPlayerId || state.draggingPlayerId) {
+    return;
+  }
+
+  const interactiveTarget = event.target.closest(
+    ".player-marker, .player-summary, .edit-button, .delete-button, #player-form, #cancel-edit, #delete-player, #reset-board"
+  );
+
+  if (!interactiveTarget) {
+    clearSelection();
+  }
 }
 
 function updatePlayerPosition(playerId, event) {
