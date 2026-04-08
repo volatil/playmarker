@@ -4,19 +4,22 @@ Esta aplicacion puede vivir en un subdominio del sitio principal sin compartir s
 
 ## 1. Variables de entorno
 
-Parte desde [.env.production.example](/C:/Users/paulo/Proyectos/playmarker/.env.production.example) y crea un `.env` real en el servidor.
+Parte desde [.env.example](/C:/Users/paulo/Proyectos/playmarker/.env.example) y crea un `.env` real en el servidor.
+
+Con un unico `.env` que contiene bloques `DEVELOP` y `PRODUCTION`, define siempre `APP_ENV=production` en el servidor para no depender de la deteccion por host.
 
 Variables clave:
 
-- `APP_ENV=production` para no depender de la deteccion por host.
-- `DB_*` apuntando a la base exclusiva de PlayMarker.
-- `GOOGLE_CLIENT_ID` como opcion preferida cuando el despliegue usa un unico client ID para ese subdominio.
-- `GOOGLE_CLIENT_ID_PRODUCTION` si prefieres mantener variables separadas por entorno.
-- `APP_SESSION_NAME` para dejar una cookie de sesion propia.
-- `APP_SESSION_DOMAIN` vacio para no compartir sesion con el dominio padre.
-- `APP_SESSION_SECURE=1` cuando el subdominio corra sobre HTTPS.
+- `APP_ENV=production`
+- `DB_HOST`, `DB_PORT`, `DB_CHARSET` compartidos
+- `DB_NAME_PRODUCTION`, `DB_USER_PRODUCTION`, `DB_PASS_PRODUCTION`
+- `DB_NAME`, `DB_USER`, `DB_PASS` solo si de verdad quieres compartir esos valores entre entornos
+- `GOOGLE_CLIENT_ID_PRODUCTION`
+- `APP_SESSION_NAME`
+- `APP_SESSION_DOMAIN`
+- `APP_SESSION_SECURE=1` cuando el subdominio corra sobre HTTPS
 
-La app sigue soportando `GOOGLE_CLIENT_ID_DEVELOP` y `GOOGLE_CLIENT_ID_PRODUCTION` por compatibilidad. Si defines `GOOGLE_CLIENT_ID`, ese valor tiene prioridad y evita depender de la deteccion de entorno.
+La app resuelve primero las variables `*_PRODUCTION` y solo despues usa las variantes compartidas sin sufijo. No toma automaticamente credenciales ni client IDs del bloque `DEVELOP`.
 
 ## 2. Base de datos
 
@@ -24,8 +27,8 @@ Ejecuta [db/bootstrap.sql](/C:/Users/paulo/Proyectos/playmarker/db/bootstrap.sql
 
 El script crea:
 
-- `usuarios` para login con Google.
-- `tablas` para guardar tableros, visibilidad y reapertura.
+- `usuarios` para login con Google
+- `tablas` para guardar tableros, visibilidad y reapertura
 
 ## 3. Apache / VirtualHost
 
@@ -52,9 +55,10 @@ En Google Cloud / Google Identity Services registra el subdominio final como ori
 
 ## 5. Checklist de validacion
 
-- `GET /health` responde con `ok=true`, `app="playmarker"`, `env` y `googleClientIdConfigured`.
-- Login con Google crea o actualiza una fila en `usuarios`.
-- Crear, guardar, renombrar y eliminar boards persiste en `tablas`.
-- Abrir una URL `?tablero=<id>` carga el tablero esperado.
-- Un tablero publico abre en modo solo lectura si no hay sesion.
-- Cerrar sesion en el subdominio no afecta al sitio padre.
+- `GET /health` responde con `ok=true`, `app="playmarker"`, `env` y `googleClientIdConfigured`
+- `APP_ENV` esta definido en `production`
+- Login con Google crea o actualiza una fila en `usuarios`
+- Crear, guardar, renombrar y eliminar boards persiste en `tablas`
+- Abrir una URL `?tablero=<id>` carga el tablero esperado
+- Un tablero publico abre en modo solo lectura si no hay sesion
+- Cerrar sesion en el subdominio no afecta al sitio padre

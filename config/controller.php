@@ -133,6 +133,15 @@ function env_value(string $key, ?string $default = null): ?string
     return (string) $value;
 }
 
+function env_key_exists(string $key): bool
+{
+    if (array_key_exists($key, $_ENV) || array_key_exists($key, $_SERVER)) {
+        return true;
+    }
+
+    return getenv($key) !== false;
+}
+
 function env_flag(string $key, bool $default = false): bool
 {
     $value = env_value($key);
@@ -237,9 +246,6 @@ function google_client_id(): string
     $primaryKey = $env === 'production'
         ? 'GOOGLE_CLIENT_ID_PRODUCTION'
         : 'GOOGLE_CLIENT_ID_DEVELOP';
-    $fallbackKey = $primaryKey === 'GOOGLE_CLIENT_ID_PRODUCTION'
-        ? 'GOOGLE_CLIENT_ID_DEVELOP'
-        : 'GOOGLE_CLIENT_ID_PRODUCTION';
 
     $primaryClientId = env_value($primaryKey, '');
 
@@ -247,7 +253,24 @@ function google_client_id(): string
         return $primaryClientId;
     }
 
-    return env_value($fallbackKey, '') ?? '';
+    return '';
+}
+
+function env_value_by_app_env(string $baseKey, ?string $default = null): ?string
+{
+    $env = app_env();
+    $suffix = $env === 'production' ? 'PRODUCTION' : 'DEVELOP';
+    $primaryKey = $baseKey . '_' . $suffix;
+
+    if (env_key_exists($primaryKey)) {
+        return env_value($primaryKey, '') ?? '';
+    }
+
+    if (env_key_exists($baseKey)) {
+        return env_value($baseKey, '') ?? '';
+    }
+
+    return $default;
 }
 
 function db_config(): array
@@ -255,9 +278,9 @@ function db_config(): array
     return [
         'host' => env_value('DB_HOST', '127.0.0.1') ?? '127.0.0.1',
         'port' => env_value('DB_PORT', '3306') ?? '3306',
-        'name' => env_value('DB_NAME', 'volatil_playmarker') ?? 'volatil_playmarker',
-        'user' => env_value('DB_USER', '') ?? '',
-        'pass' => env_value('DB_PASS', '') ?? '',
+        'name' => env_value_by_app_env('DB_NAME', 'volatil_playmarker') ?? 'volatil_playmarker',
+        'user' => env_value_by_app_env('DB_USER', '') ?? '',
+        'pass' => env_value_by_app_env('DB_PASS', '') ?? '',
         'charset' => env_value('DB_CHARSET', 'utf8mb4') ?? 'utf8mb4',
     ];
 }

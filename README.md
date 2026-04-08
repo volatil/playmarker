@@ -1,13 +1,13 @@
-<!-- 
+<!--
 -> C:\Windows\System32\drivers\etc\HOSTS
 127.0.0.1   playmarker.local.cl
 
 C:\xampp\apache\conf\extra\httpd-xampp.conf
 <VirtualHost *:80>
-	DocumentRoot "C:\xampp\htdocs\playmarker"
-	ServerName playmarker.local.com
-	<Directory "C:\xampp\htdocs\playmarker">
-	</Directory>
+    DocumentRoot "C:\xampp\htdocs\playmarker"
+    ServerName playmarker.local.com
+    <Directory "C:\xampp\htdocs\playmarker">
+    </Directory>
 </VirtualHost>
 
 en "C:\xampp\apache\conf\httpd.conf" agrega
@@ -52,7 +52,7 @@ Cada jugador se representa con una ficha visual que incluye:
 
 ## Como usarlo
 
-Como es un proyecto PHP liviano, lo ideal es ejecutarlo en Apache/XAMPP o con el servidor embebido de PHP. Antes de arrancar, crea tu `.env` a partir de [.env.example](/C:/Users/paulo/Proyectos/playmarker/.env.example) y carga la base con [db/bootstrap.sql](/C:/Users/paulo/Proyectos/playmarker/db/bootstrap.sql).
+Como es un proyecto PHP liviano, lo ideal es ejecutarlo en Apache/XAMPP o con el servidor embebido de PHP. Antes de arrancar, crea tu `.env` a partir de [.env.example](/C:/Users/paulo/Proyectos/playmarker/.env.example), define `APP_ENV` segun el entorno y carga la base con [db/bootstrap.sql](/C:/Users/paulo/Proyectos/playmarker/db/bootstrap.sql).
 
 ### Opcion 1: servidor embebido de PHP
 
@@ -66,7 +66,7 @@ Luego abre `http://localhost:8000`.
 
 Apunta el virtual host o `DocumentRoot` a la carpeta del proyecto y asegurate de que `AllowOverride All` este habilitado para usar [`.htaccess`](/C:/Users/paulo/Proyectos/playmarker/.htaccess).
 
-Para producción en subdominio revisa [docs/production-subdomain.md](/C:/Users/paulo/Proyectos/playmarker/docs/production-subdomain.md).
+Para produccion en subdominio revisa [docs/production-subdomain.md](/C:/Users/paulo/Proyectos/playmarker/docs/production-subdomain.md).
 
 ## Flujo de uso
 
@@ -124,14 +124,18 @@ La URL sigue incluyendo `?tablero=<id>` para abrir directamente un tablero concr
 
 ## Variables de entorno
 
-- `APP_ENV`: fuerza `develop` o `production`.
-- `GOOGLE_CLIENT_ID_DEVELOP`: client ID para desarrollo.
-- `GOOGLE_CLIENT_ID_PRODUCTION`: client ID para producción.
-- `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASS`, `DB_CHARSET`: conexión a MySQL.
-- `APP_SESSION_NAME`: nombre de cookie de sesión propia de PlayMarker.
-- `APP_SESSION_DOMAIN`: déjalo vacío para no compartir sesión con el dominio padre.
-- `APP_SESSION_SAMESITE`: política SameSite de la cookie.
+- `APP_ENV`: define `develop` o `production`; cuando usas un solo `.env` con ambos bloques es obligatorio configurarlo.
+- `GOOGLE_CLIENT_ID_DEVELOP`, `GOOGLE_CLIENT_ID_PRODUCTION`: client ID por entorno.
+- `DB_HOST`, `DB_PORT`, `DB_CHARSET`: conexion MySQL compartida.
+- `DB_NAME_DEVELOP`, `DB_USER_DEVELOP`, `DB_PASS_DEVELOP`: credenciales de desarrollo.
+- `DB_NAME_PRODUCTION`, `DB_USER_PRODUCTION`, `DB_PASS_PRODUCTION`: credenciales de produccion.
+- `DB_NAME`, `DB_USER`, `DB_PASS`: opcionales como valores compartidos explicitos si ambos entornos usan la misma base o las mismas credenciales.
+- `APP_SESSION_NAME`: nombre de cookie de sesion propia de PlayMarker.
+- `APP_SESSION_DOMAIN`: dejalo vacio para no compartir sesion con el dominio padre.
+- `APP_SESSION_SAMESITE`: politica SameSite de la cookie.
 - `APP_SESSION_SECURE`: usa `1` en HTTPS.
+
+Cuando PlayMarker resuelve la configuracion toma primero la variable del entorno activo, luego la variable compartida sin sufijo y, si ninguna existe, usa el valor por defecto del codigo. Un valor faltante o vacio en desarrollo no debe heredar automaticamente el secreto de produccion.
 
 ## Responsividad
 
