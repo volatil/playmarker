@@ -9,6 +9,24 @@ class SitioController extends MainController
     public function home(): void
     {
         $requestedBoardId = trim((string) ($_GET['tablero'] ?? ''));
+
+        if ($requestedBoardId === '') {
+            $user = current_user();
+
+            if (is_object($user) && trim((string) ($user->id ?? '')) !== '') {
+                try {
+                    $lastOpenedBoardId = $this->findLastOpenedBoardId((string) $user->id);
+
+                    if ($lastOpenedBoardId !== null) {
+                        header('Location: ' . app_url('/?tablero=' . rawurlencode($lastOpenedBoardId)));
+                        exit;
+                    }
+                } catch (Throwable $exception) {
+                    error_log('Error resolviendo tablero inicial: ' . $exception->getMessage());
+                }
+            }
+        }
+
         $pageMode = $requestedBoardId === '' ? 'landing' : 'board';
 
         $this->render('sitio/home.php', [
@@ -208,6 +226,35 @@ class SitioController extends MainController
         }
 
         return $user;
+    }
+
+    private function findLastOpenedBoardId(string $userId): ?string
+    {
+        $statement = db_connection()->prepare(
+            'SELECT id
+            FROM tablas
+            WHERE usuario_id = :usuario_id
+              AND eliminado_en IS NULL
+            ORDER BY
+                ultima_vez_abierta_en IS NULL ASC,
+                ultima_vez_abierta_en DESC,
+                actualizado_en DESC,
+                creado_en DESC
+            LIMIT 1'
+        );
+        $statement->execute([
+            'usuario_id' => $userId,
+        ]);
+
+        $boardId = $statement->fetchColumn();
+
+        if (!is_string($boardId)) {
+            return null;
+        }
+
+        $boardId = trim($boardId);
+
+        return $boardId === '' ? null : $boardId;
     }
 
     private function nullableString(mixed $value): ?string
