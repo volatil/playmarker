@@ -16,7 +16,11 @@ function load_env_file(string $filePath): void
         return;
     }
 
-    foreach ($lines as $line) {
+    foreach ($lines as $index => $line) {
+        if ($index === 0) {
+            $line = preg_replace('/^\xEF\xBB\xBF/', '', $line) ?? $line;
+        }
+
         $trimmed = trim($line);
 
         if ($trimmed === '' || str_starts_with($trimmed, '#')) {
@@ -27,6 +31,10 @@ function load_env_file(string $filePath): void
         $key = trim($key);
 
         if ($key === '') {
+            continue;
+        }
+
+        if (env_has_value($key)) {
             continue;
         }
 
@@ -93,9 +101,30 @@ function asset_url(string $path): string
     return app_url('/assets/' . ltrim($path, '/'));
 }
 
+function env_has_value(string $key): bool
+{
+    if (array_key_exists($key, $_ENV) && $_ENV[$key] !== '') {
+        return true;
+    }
+
+    if (array_key_exists($key, $_SERVER) && $_SERVER[$key] !== '') {
+        return true;
+    }
+
+    $value = getenv($key);
+
+    return $value !== false && $value !== '';
+}
+
 function env_value(string $key, ?string $default = null): ?string
 {
-    $value = $_ENV[$key] ?? getenv($key);
+    if (array_key_exists($key, $_ENV)) {
+        $value = $_ENV[$key];
+    } elseif (array_key_exists($key, $_SERVER)) {
+        $value = $_SERVER[$key];
+    } else {
+        $value = getenv($key);
+    }
 
     if ($value === false || $value === null || $value === '') {
         return $default;
@@ -198,11 +227,27 @@ configure_session();
 
 function google_client_id(): string
 {
-    $envKey = app_env() === 'production'
+    $clientId = env_value('GOOGLE_CLIENT_ID', '');
+
+    if ($clientId !== null && $clientId !== '') {
+        return $clientId;
+    }
+
+    $env = app_env();
+    $primaryKey = $env === 'production'
         ? 'GOOGLE_CLIENT_ID_PRODUCTION'
         : 'GOOGLE_CLIENT_ID_DEVELOP';
+    $fallbackKey = $primaryKey === 'GOOGLE_CLIENT_ID_PRODUCTION'
+        ? 'GOOGLE_CLIENT_ID_DEVELOP'
+        : 'GOOGLE_CLIENT_ID_PRODUCTION';
 
-    return env_value($envKey, '') ?? '';
+    $primaryClientId = env_value($primaryKey, '');
+
+    if ($primaryClientId !== null && $primaryClientId !== '') {
+        return $primaryClientId;
+    }
+
+    return env_value($fallbackKey, '') ?? '';
 }
 
 function db_config(): array

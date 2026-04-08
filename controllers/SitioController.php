@@ -43,6 +43,8 @@ class SitioController extends MainController
         $this->renderJson([
             'ok' => true,
             'app' => 'playmarker',
+            'env' => app_env(),
+            'googleClientIdConfigured' => google_client_id() !== '',
         ]);
     }
 
