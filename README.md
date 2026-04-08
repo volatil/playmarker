@@ -1,17 +1,17 @@
 <!-- 
 -> C:\Windows\System32\drivers\etc\HOSTS
-127.0.0.1   golesdebarrio.local.cl
+127.0.0.1   playmarker.local.cl
 
 C:\xampp\apache\conf\extra\httpd-xampp.conf
 <VirtualHost *:80>
-	DocumentRoot "C:\xampp\htdocs\clickzapatilla_php"
-	ServerName clickzapatilla.local.com
-	<Directory "C:\xampp\htdocs\clickzapatilla_php">
+	DocumentRoot "C:\xampp\htdocs\playmarker"
+	ServerName playmarker.local.com
+	<Directory "C:\xampp\htdocs\playmarker">
 	</Directory>
 </VirtualHost>
 
 en "C:\xampp\apache\conf\httpd.conf" agrega
-<Directory "D:/Proyectos/clickzapatilla_php">
+<Directory "C:/Proyectos/playmarker">
     Options Indexes FollowSymLinks
     AllowOverride All
     Require all granted
@@ -121,7 +121,7 @@ Tambien existe compatibilidad con un formato legacy basado en multiples parametr
 - [views/sitio/home.php](/C:/Users/paulo/Proyectos/playmarker/views/sitio/home.php): vista principal de la pizarra.
 - [assets/css/styles.css](/C:/Users/paulo/Proyectos/playmarker/assets/css/styles.css): estilos visuales, layout responsive, cancha, banca y fichas.
 - [assets/js/app.js](/C:/Users/paulo/Proyectos/playmarker/assets/js/app.js): logica de estado, formulario, renderizado, drag and drop y serializacion en URL.
-- [assets/images/favicon.svg](/C:/Users/paulo/Proyectos/playmarker/assets/images/favicon.svg), [assets/images/favicon.ico](/C:/Users/paulo/Proyectos/playmarker/assets/images/favicon.ico), [assets/images/favicon-64.png](/C:/Users/paulo/Proyectos/playmarker/assets/images/favicon-64.png): iconos de la aplicacion.
+- [assets/images/favicon.ico](/C:/Users/paulo/Proyectos/playmarker/assets/images/favicon.ico), [assets/images/favicon-64.png](/C:/Users/paulo/Proyectos/playmarker/assets/images/favicon-64.png): iconos de la aplicacion.
 - [assets/images/og-image.png](/C:/Users/paulo/Proyectos/playmarker/assets/images/og-image.png): imagen usada para compartir en redes.
 
 ## Detalles tecnicos

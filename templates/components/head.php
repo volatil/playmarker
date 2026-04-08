@@ -5,7 +5,6 @@ $description = $meta['description'] ?? '';
 $ogTitle = $meta['ogTitle'] ?? $title;
 $ogDescription = $meta['ogDescription'] ?? $description;
 $ogImage = $meta['ogImage'] ?? '';
-$faviconSvg = $meta['faviconSvg'] ?? '';
 $faviconIco = $meta['faviconIco'] ?? '';
 $stylesheets = $meta['stylesheets'] ?? [];
 ?>
@@ -21,9 +20,6 @@ $stylesheets = $meta['stylesheets'] ?? [];
 <meta name="twitter:title" content="<?= htmlspecialchars($ogTitle, ENT_QUOTES, 'UTF-8') ?>">
 <meta name="twitter:description" content="<?= htmlspecialchars($ogDescription, ENT_QUOTES, 'UTF-8') ?>">
 <meta name="twitter:image" content="<?= htmlspecialchars($ogImage, ENT_QUOTES, 'UTF-8') ?>">
-<?php if ($faviconSvg !== ''): ?>
-<link rel="icon" href="<?= htmlspecialchars($faviconSvg, ENT_QUOTES, 'UTF-8') ?>" type="image/svg+xml">
-<?php endif; ?>
 <?php if ($faviconIco !== ''): ?>
 <link rel="alternate icon" href="<?= htmlspecialchars($faviconIco, ENT_QUOTES, 'UTF-8') ?>" sizes="any">
 <?php endif; ?>

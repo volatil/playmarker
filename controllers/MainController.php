@@ -42,7 +42,6 @@ class MainController
             'ogTitle' => 'PlayMarker',
             'ogDescription' => 'Organiza alineaciones, mueve fichas y ajusta posiciones sobre la cancha.',
             'ogImage' => asset_url('images/og-image.png'),
-            'faviconSvg' => asset_url('images/favicon.svg'),
             'faviconIco' => asset_url('images/favicon.ico'),
             'stylesheets' => [
                 asset_url('css/styles.css'),
