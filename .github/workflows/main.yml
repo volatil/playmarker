@@ -46,7 +46,6 @@ jobs:
       #     index.php
       #     php.ini
       #     robots.txt
-      #     routes.php
       #     sitemap.xml
 
     # NUEVO: Cachear el estado del servidor FTP
