@@ -357,14 +357,28 @@ h2 {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 10px;
+  gap: 12px;
 }
 
 .board-status-wrap {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 6px;
+  gap: 8px;
+}
+
+.board-status-card {
+  min-width: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  border: 1px solid rgba(107, 72, 34, 0.12);
+  border-radius: 24px;
+  background: linear-gradient(180deg, rgba(255, 252, 247, 0.95) 0%, rgba(255, 247, 238, 0.88) 100%);
+  box-shadow: 0 14px 28px rgba(70, 38, 8, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
 }
 
 .board-actions {
@@ -516,42 +530,94 @@ form {
 .board-save-status {
   min-height: 1.2em;
   margin: 0;
-  font-size: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 0.82rem;
   font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: 0.01em;
+  color: rgba(87, 70, 54, 0.92);
+  text-align: right;
+}
+
+.board-save-status:empty {
+  display: none;
+}
+
+.board-save-status::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  flex: 0 0 8px;
+  border-radius: 50%;
+  background: rgba(107, 72, 34, 0.28);
+  box-shadow: 0 0 0 4px rgba(107, 72, 34, 0.08);
 }
 
 .board-save-status.is-error {
   color: #9f1d1d;
 }
 
+.board-save-status.is-error::before {
+  background: #c2410c;
+  box-shadow: 0 0 0 4px rgba(194, 65, 12, 0.12);
+}
+
 .board-save-status.is-success {
   color: #166534;
+}
+
+.board-save-status.is-success::before {
+  background: #16a34a;
+  box-shadow: 0 0 0 4px rgba(22, 163, 74, 0.14);
 }
 
 .board-save-status.is-warning {
   color: var(--accent-dark);
 }
 
+.board-save-status.is-warning::before {
+  background: var(--accent);
+  box-shadow: 0 0 0 4px rgba(202, 93, 45, 0.12);
+}
+
 .board-visibility-toggle {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 12px;
-  border-radius: 18px;
-  border: 1px solid rgba(107, 72, 34, 0.14);
-  background: rgba(255, 255, 255, 0.7);
+  justify-content: space-between;
+  gap: 14px;
+  padding: 8px 10px;
+  flex: 0 0 auto;
+  border-radius: 20px;
+  border: 1px solid rgba(107, 72, 34, 0.1);
+  background: rgba(255, 255, 255, 0.72);
   color: var(--text);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
+  transition: border-color 120ms ease, box-shadow 120ms ease, background 120ms ease;
+}
+
+.board-visibility-toggle:hover {
+  border-color: rgba(202, 93, 45, 0.22);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72), 0 10px 18px rgba(70, 38, 8, 0.05);
 }
 
 .board-visibility-toggle input {
   appearance: none;
-  width: 50px;
-  height: 30px;
+  width: 54px;
+  height: 32px;
+  margin: 0;
+  flex: 0 0 auto;
   border-radius: 999px;
-  border: 1px solid rgba(107, 72, 34, 0.18);
-  background: rgba(107, 72, 34, 0.12);
+  border: 1px solid rgba(107, 72, 34, 0.16);
+  background: linear-gradient(180deg, rgba(125, 97, 66, 0.18) 0%, rgba(107, 72, 34, 0.12) 100%);
   position: relative;
-  transition: background 120ms ease, border-color 120ms ease;
+  box-shadow: inset 0 1px 2px rgba(70, 38, 8, 0.08);
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
 }
 
 .board-visibility-toggle input::after {
@@ -559,51 +625,55 @@ form {
   position: absolute;
   top: 3px;
   left: 3px;
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
-  background: #fffaf4;
-  box-shadow: 0 6px 12px rgba(70, 38, 8, 0.16);
-  transition: transform 120ms ease;
+  background: linear-gradient(180deg, #fffaf4 0%, #fff1e0 100%);
+  box-shadow: 0 6px 14px rgba(70, 38, 8, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  transition: transform 120ms ease, background 120ms ease;
 }
 
 .board-visibility-toggle input:checked {
-  background: rgba(34, 197, 94, 0.22);
-  border-color: rgba(22, 101, 52, 0.28);
+  background: linear-gradient(135deg, rgba(78, 196, 120, 0.72) 0%, rgba(28, 163, 87, 0.82) 100%);
+  border-color: rgba(22, 101, 52, 0.18);
+  box-shadow: inset 0 1px 2px rgba(20, 83, 45, 0.12), 0 8px 18px rgba(34, 197, 94, 0.12);
 }
 
 .board-visibility-toggle input:checked::after {
-  transform: translateX(20px);
+  transform: translateX(22px);
 }
 
 .board-visibility-toggle input:focus-visible {
-  outline: 2px solid rgba(202, 93, 45, 0.22);
-  outline-offset: 2px;
+  outline: 2px solid rgba(202, 93, 45, 0.2);
+  outline-offset: 3px;
 }
 
 .board-visibility-toggle input:disabled {
   cursor: wait;
-  opacity: 0.7;
+  opacity: 0.78;
 }
 
 .board-visibility-copy {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 2px;
+  gap: 3px;
+  min-width: 0;
 }
 
 .board-visibility-label {
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--muted);
+  color: rgba(107, 72, 34, 0.62);
 }
 
 .board-visibility-value {
-  font-size: 0.92rem;
-  font-weight: 700;
+  font-size: 1rem;
+  font-weight: 800;
+  line-height: 1.15;
+  color: var(--text);
 }
 
 .shared-board-message {
@@ -1112,6 +1182,21 @@ form {
     justify-content: stretch;
   }
 
+  .board-status-card {
+    width: 100%;
+    min-width: 0;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    padding: 12px;
+    border-radius: 22px;
+  }
+
+  .board-save-status {
+    justify-content: flex-start;
+    text-align: left;
+  }
+
   .player-item {
     display: flex;
     flex-direction: column;
@@ -1127,6 +1212,7 @@ form {
   .board-visibility-toggle {
     width: 100%;
     justify-content: space-between;
+    padding: 12px;
   }
 
   .player-item-actions > button,
