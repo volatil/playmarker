@@ -97,10 +97,21 @@
           <p class="eyebrow">Campo interactivo</p>
           <h2>Arrastra las fichas dentro de la cancha</h2>
         </div>
-        <p class="board-tip">Toca o haz clic sobre un jugador para editarlo desde el panel lateral.</p>
+        <div class="board-header-actions">
+          <p class="board-tip">Toca o haz clic sobre un jugador para editarlo desde el panel lateral.</p>
+          <div class="board-actions">
+            <button class="ghost-button" id="rename-board" type="button">Renombrar board</button>
+            <button class="ghost-button" id="delete-board" type="button">Eliminar board</button>
+            <button class="primary-button" id="add-board" type="button">Nuevo board</button>
+          </div>
+        </div>
       </div>
 
       <section class="pitch-frame">
+        <div class="boards-bar">
+          <div class="boards-tabs" id="boards-tabs" aria-label="Boards disponibles"></div>
+        </div>
+
         <div class="board-layout">
           <div class="pitch" id="pitch" aria-label="Cancha de futbol interactiva">
             <div class="pitch-markings">

@@ -1,6 +1,9 @@
 const POSITION_OPTIONS = ["arquero", "defensa", "medio", "delantero"];
 const STATE_QUERY_KEY = "s";
 const LEGACY_PLAYER_QUERY_KEY = "player";
+const BOARDS_STORAGE_KEY = "playmarker:boards";
+const ACTIVE_BOARD_STORAGE_KEY = "playmarker:active-board";
+const SHARED_BOARD_PREFIX = "Compartido";
 const POSITION_CODES = {
   arquero: "0",
   defensa: "1",
@@ -52,7 +55,8 @@ const PLACEMENT_BOUNDS = {
 };
 
 const state = {
-  players: loadPlayers(),
+  boards: [],
+  activeBoardId: null,
   selectedPlayerId: null,
   draggingPlayerId: null,
   dragPointerId: null,
@@ -78,8 +82,13 @@ const elements = {
   resetBoardButton: document.querySelector("#reset-board"),
   formError: document.querySelector("#form-error"),
   playerItemTemplate: document.querySelector("#player-item-template"),
+  boardsTabs: document.querySelector("#boards-tabs"),
+  addBoardButton: document.querySelector("#add-board"),
+  renameBoardButton: document.querySelector("#rename-board"),
+  deleteBoardButton: document.querySelector("#delete-board"),
 };
 
+initializeState();
 render();
 syncUrlFromState();
 
@@ -87,34 +96,191 @@ elements.playerForm.addEventListener("submit", handleFormSubmit);
 elements.deleteButton.addEventListener("click", handleDeleteSelected);
 elements.cancelEditButton.addEventListener("click", resetForm);
 elements.resetBoardButton.addEventListener("click", handleResetBoard);
+elements.addBoardButton.addEventListener("click", handleCreateBoard);
+elements.renameBoardButton.addEventListener("click", handleRenameBoard);
+elements.deleteBoardButton.addEventListener("click", handleDeleteBoard);
 document.addEventListener("pointerdown", handleDocumentPointerDown);
 window.addEventListener("pointermove", handlePointerMove);
 window.addEventListener("pointerup", stopDragging);
 window.addEventListener("pointercancel", stopDragging);
 window.addEventListener("resize", renderPlayers);
 
-function loadPlayers() {
+function initializeState() {
+  const persistedBoards = loadStoredBoards();
+  const persistedActiveBoardId = loadStoredActiveBoardId();
+  const sharedState = loadSharedPlayersFromUrl();
+
+  state.boards = persistedBoards;
+  state.activeBoardId = persistedActiveBoardId;
+
+  if (sharedState) {
+    const existingSharedBoard = state.boards.find((board) => board.shareKey === sharedState.shareKey);
+    const matchingBoardByPlayers = state.boards.find((board) => getBoardShareKey(board) === sharedState.shareKey);
+    const activeBoard = getActiveBoard();
+
+    if (existingSharedBoard) {
+      state.activeBoardId = existingSharedBoard.id;
+    } else if (matchingBoardByPlayers) {
+      state.boards = state.boards.map((board) =>
+        board.id === matchingBoardByPlayers.id
+          ? {
+              ...board,
+              shareKey: sharedState.shareKey,
+            }
+          : board
+      );
+      state.activeBoardId = matchingBoardByPlayers.id;
+    } else if (activeBoard && getBoardShareKey(activeBoard) === sharedState.shareKey) {
+      state.boards = state.boards.map((board) =>
+        board.id === activeBoard.id
+          ? {
+              ...board,
+              shareKey: sharedState.shareKey,
+            }
+          : board
+      );
+      state.activeBoardId = activeBoard.id;
+    } else {
+      const sharedBoard = createBoard({
+        name: buildSharedBoardName(state.boards),
+        players: sharedState.players,
+        shareKey: sharedState.shareKey,
+      });
+      state.boards = [...state.boards, sharedBoard];
+      state.activeBoardId = sharedBoard.id;
+    }
+  }
+
+  if (state.boards.length === 0) {
+    const initialBoard = createBoard({ name: "Board 1" });
+    state.boards = [initialBoard];
+    state.activeBoardId = initialBoard.id;
+  }
+
+  if (!getActiveBoard()) {
+    state.activeBoardId = state.boards[0].id;
+  }
+
+  persistBoards();
+}
+
+function loadStoredBoards() {
+  try {
+    const rawBoards = window.localStorage.getItem(BOARDS_STORAGE_KEY);
+    if (!rawBoards) {
+      return [];
+    }
+
+    const parsedBoards = JSON.parse(rawBoards);
+    if (!Array.isArray(parsedBoards)) {
+      return [];
+    }
+
+    return parsedBoards
+      .map(normalizeStoredBoard)
+      .filter(Boolean);
+  } catch (error) {
+    return [];
+  }
+}
+
+function loadStoredActiveBoardId() {
+  try {
+    const value = window.localStorage.getItem(ACTIVE_BOARD_STORAGE_KEY);
+    return typeof value === "string" && value.trim() !== "" ? value : null;
+  } catch (error) {
+    return null;
+  }
+}
+
+function loadSharedPlayersFromUrl() {
   try {
     const searchParams = new URLSearchParams(window.location.search);
     const compactState = searchParams.get(STATE_QUERY_KEY);
     if (compactState) {
       const parsedCompactState = parseCompactState(compactState);
       if (parsedCompactState.length > 0) {
-        return parsedCompactState;
+        return {
+          players: parsedCompactState,
+          shareKey: compactState,
+        };
       }
     }
 
     const serializedPlayers = searchParams.getAll(LEGACY_PLAYER_QUERY_KEY);
     if (serializedPlayers.length === 0) {
-      return [];
+      return null;
     }
 
-    return serializedPlayers
+    const players = serializedPlayers
       .map(parsePlayerParam)
       .filter(Boolean);
+
+    if (players.length === 0) {
+      return null;
+    }
+
+    return {
+      players,
+      shareKey: encodeBase64Url(JSON.stringify(players.map(serializeCompactPlayer))),
+    };
   } catch (error) {
-    return [];
+    return null;
   }
+}
+
+function normalizeStoredBoard(board) {
+  if (!board || typeof board !== "object") {
+    return null;
+  }
+
+  const id = String(board.id || "").trim();
+  if (!id) {
+    return null;
+  }
+
+  const players = Array.isArray(board.players)
+    ? board.players.map(normalizeStoredPlayer).filter(Boolean)
+    : [];
+  const name = sanitizeBoardName(board.name) || "Board";
+  const createdAt = typeof board.createdAt === "string" && board.createdAt ? board.createdAt : new Date().toISOString();
+  const updatedAt = typeof board.updatedAt === "string" && board.updatedAt ? board.updatedAt : createdAt;
+  const shareKey = typeof board.shareKey === "string" && board.shareKey ? board.shareKey : "";
+
+  return {
+    id,
+    name,
+    players,
+    createdAt,
+    updatedAt,
+    shareKey,
+  };
+}
+
+function normalizeStoredPlayer(player) {
+  if (!player || typeof player !== "object") {
+    return null;
+  }
+
+  const parsedPlayer = {
+    id: String(player.id || ""),
+    name: String(player.name || ""),
+    number: String(player.number || ""),
+    position: normalizePosition(player.position),
+    team: String(player.team || ""),
+    zone: player.zone === "bench" ? "bench" : "pitch",
+    x: Number(player.x),
+    y: Number(player.y),
+  };
+
+  if (!isValidUrlPlayer(parsedPlayer)) {
+    return null;
+  }
+
+  return {
+    ...parsedPlayer,
+    ...clampPlacementCoordinates(parsedPlayer.zone, parsedPlayer.x, parsedPlayer.y),
+  };
 }
 
 function parseCompactState(value) {
@@ -211,6 +377,7 @@ function isValidUrlPlayer(player) {
     typeof player.name === "string" &&
     typeof player.number === "string" &&
     typeof player.position === "string" &&
+    player.position !== "" &&
     (player.zone === "pitch" || player.zone === "bench") &&
     (player.team === "home" || player.team === "away") &&
     Number.isFinite(player.x) &&
@@ -233,7 +400,8 @@ function serializeCompactPlayer(player) {
 
 function syncUrlFromState() {
   const nextUrl = new URL(window.location.href);
-  const compactState = state.players.map(serializeCompactPlayer);
+  const activeBoard = getActiveBoard();
+  const compactState = activeBoard ? activeBoard.players.map(serializeCompactPlayer) : [];
   nextUrl.search = compactState.length > 0 ? `?${STATE_QUERY_KEY}=${encodeBase64Url(JSON.stringify(compactState))}` : "";
 
   const nextRelativeUrl = `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`;
@@ -242,6 +410,86 @@ function syncUrlFromState() {
   if (nextRelativeUrl !== currentRelativeUrl) {
     history.replaceState(null, "", nextRelativeUrl);
   }
+}
+
+function persistBoards() {
+  try {
+    window.localStorage.setItem(BOARDS_STORAGE_KEY, JSON.stringify(state.boards));
+    if (state.activeBoardId) {
+      window.localStorage.setItem(ACTIVE_BOARD_STORAGE_KEY, state.activeBoardId);
+    } else {
+      window.localStorage.removeItem(ACTIVE_BOARD_STORAGE_KEY);
+    }
+  } catch (error) {
+    return;
+  }
+}
+
+function getActiveBoard() {
+  return state.boards.find((board) => board.id === state.activeBoardId) || null;
+}
+
+function getActivePlayers() {
+  const activeBoard = getActiveBoard();
+  return activeBoard ? activeBoard.players : [];
+}
+
+function updateActiveBoard(updater) {
+  const activeBoard = getActiveBoard();
+  if (!activeBoard) {
+    return;
+  }
+
+  const updatedBoard = updater(activeBoard);
+  if (!updatedBoard) {
+    return;
+  }
+
+  state.boards = state.boards.map((board) =>
+    board.id === activeBoard.id ? normalizeBoardTimestamps(updatedBoard, board) : board
+  );
+  persistBoards();
+  syncUrlFromState();
+}
+
+function normalizeBoardTimestamps(nextBoard, previousBoard) {
+  return {
+    ...nextBoard,
+    createdAt: previousBoard.createdAt,
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+function createBoard({ name, players = [], shareKey = "" } = {}) {
+  const now = new Date().toISOString();
+  return {
+    id: createEntityId("b"),
+    name: sanitizeBoardName(name) || `Board ${state.boards.length + 1}`,
+    players: players.map((player) => ({
+      ...player,
+      ...clampPlacementCoordinates(player.zone, player.x, player.y),
+    })),
+    createdAt: now,
+    updatedAt: now,
+    shareKey,
+  };
+}
+
+function getBoardShareKey(board) {
+  if (!board) {
+    return "";
+  }
+
+  return encodeBase64Url(JSON.stringify(board.players.map(serializeCompactPlayer)));
+}
+
+function buildSharedBoardName(boards) {
+  const sharedBoards = boards.filter((board) => board.name.startsWith(SHARED_BOARD_PREFIX)).length;
+  return sharedBoards === 0 ? SHARED_BOARD_PREFIX : `${SHARED_BOARD_PREFIX} ${sharedBoards + 1}`;
+}
+
+function sanitizeBoardName(value) {
+  return String(value || "").trim().slice(0, 32);
 }
 
 function encodeBase64Url(value) {
@@ -286,22 +534,26 @@ function handleFormSubmit(event) {
   }
 
   if (payload.id) {
-    state.players = state.players.map((player) =>
-      player.id === payload.id
-        ? {
-            ...player,
-            name: payload.name,
-            number: payload.number,
-            position: payload.position,
-            team: payload.team,
-          }
-        : player
-    );
+    updateActiveBoard((board) => ({
+      ...board,
+      shareKey: "",
+      players: board.players.map((player) =>
+        player.id === payload.id
+          ? {
+              ...player,
+              name: payload.name,
+              number: payload.number,
+              position: payload.position,
+              team: payload.team,
+            }
+          : player
+      ),
+    }));
     state.selectedPlayerId = payload.id;
   } else {
     const { x, y } = getNextSpawnPosition(payload.team);
     const newPlayer = {
-      id: createPlayerId(),
+      id: createEntityId("p"),
       name: payload.name,
       number: payload.number,
       position: payload.position,
@@ -310,16 +562,21 @@ function handleFormSubmit(event) {
       x,
       y,
     };
-    state.players = [...state.players, newPlayer];
+
+    updateActiveBoard((board) => ({
+      ...board,
+      shareKey: "",
+      players: [...board.players, newPlayer],
+    }));
     state.selectedPlayerId = null;
   }
 
-  syncUrlFromState();
   if (!payload.id) {
     elements.playerForm.reset();
     elements.playerPosition.value = "arquero";
     elements.playerTeam.value = "home";
   }
+
   render();
 }
 
@@ -349,7 +606,7 @@ function validatePlayer(player) {
 }
 
 function getNextSpawnPosition(team) {
-  const teamPlayers = state.players.filter((player) => player.team === team && player.zone === "pitch");
+  const teamPlayers = getActivePlayers().filter((player) => player.team === team && player.zone === "pitch");
   const base = DEFAULT_POSITION.pitch[team];
   const row = Math.floor(teamPlayers.length / 4);
   const column = teamPlayers.length % 4;
@@ -364,26 +621,123 @@ function handleDeleteSelected() {
     return;
   }
 
-  state.players = state.players.filter((player) => player.id !== state.selectedPlayerId);
-  state.selectedPlayerId = null;
-  syncUrlFromState();
-  render();
+  handleDeletePlayer(state.selectedPlayerId);
 }
 
 function handleDeletePlayer(playerId) {
-  state.players = state.players.filter((player) => player.id !== playerId);
+  updateActiveBoard((board) => ({
+    ...board,
+    shareKey: "",
+    players: board.players.filter((player) => player.id !== playerId),
+  }));
+
   if (state.selectedPlayerId === playerId) {
     state.selectedPlayerId = null;
   }
-  syncUrlFromState();
+
   render();
 }
 
 function handleResetBoard() {
-  state.players = [];
+  updateActiveBoard((board) => ({
+    ...board,
+    shareKey: "",
+    players: [],
+  }));
   state.selectedPlayerId = null;
   state.draggingPlayerId = null;
   state.dragPointerId = null;
+  render();
+}
+
+function handleCreateBoard() {
+  const nextBoardNumber = state.boards.length + 1;
+  const providedName = window.prompt("Nombre del nuevo board:", `Board ${nextBoardNumber}`);
+  if (providedName === null) {
+    return;
+  }
+
+  const boardName = sanitizeBoardName(providedName) || `Board ${nextBoardNumber}`;
+  const newBoard = createBoard({ name: boardName });
+  state.boards = [...state.boards, newBoard];
+  state.activeBoardId = newBoard.id;
+  state.selectedPlayerId = null;
+  state.draggingPlayerId = null;
+  state.dragPointerId = null;
+  clearError();
+  persistBoards();
+  syncUrlFromState();
+  render();
+}
+
+function handleRenameBoard() {
+  const activeBoard = getActiveBoard();
+  if (!activeBoard) {
+    return;
+  }
+
+  const providedName = window.prompt("Nuevo nombre del board:", activeBoard.name);
+  if (providedName === null) {
+    return;
+  }
+
+  const nextName = sanitizeBoardName(providedName);
+  if (!nextName) {
+    showError("El board debe tener un nombre.");
+    return;
+  }
+
+  clearError();
+  updateActiveBoard((board) => ({
+    ...board,
+    name: nextName,
+  }));
+  render();
+}
+
+function handleDeleteBoard() {
+  const activeBoard = getActiveBoard();
+  if (!activeBoard) {
+    return;
+  }
+
+  const confirmed = window.confirm(`Eliminar "${activeBoard.name}"?`);
+  if (!confirmed) {
+    return;
+  }
+
+  if (state.boards.length === 1) {
+    const replacementBoard = createBoard({ name: "Board 1" });
+    state.boards = [replacementBoard];
+    state.activeBoardId = replacementBoard.id;
+  } else {
+    const currentBoardIndex = state.boards.findIndex((board) => board.id === activeBoard.id);
+    const remainingBoards = state.boards.filter((board) => board.id !== activeBoard.id);
+    const nextBoard = remainingBoards[Math.max(0, currentBoardIndex - 1)] || remainingBoards[0];
+    state.boards = remainingBoards;
+    state.activeBoardId = nextBoard ? nextBoard.id : null;
+  }
+
+  state.selectedPlayerId = null;
+  state.draggingPlayerId = null;
+  state.dragPointerId = null;
+  clearError();
+  persistBoards();
+  syncUrlFromState();
+  render();
+}
+
+function selectBoard(boardId) {
+  if (boardId === state.activeBoardId) {
+    return;
+  }
+
+  state.activeBoardId = boardId;
+  state.selectedPlayerId = null;
+  state.draggingPlayerId = null;
+  state.dragPointerId = null;
+  clearError();
+  persistBoards();
   syncUrlFromState();
   render();
 }
@@ -419,7 +773,7 @@ function resetForm() {
 }
 
 function syncForm() {
-  const selectedPlayer = state.players.find((player) => player.id === state.selectedPlayerId);
+  const selectedPlayer = getActivePlayers().find((player) => player.id === state.selectedPlayerId);
 
   if (!selectedPlayer) {
     elements.formTitle.textContent = "Crear jugador";
@@ -447,18 +801,39 @@ function syncForm() {
 }
 
 function render() {
+  renderBoardsTabs();
   syncForm();
   renderPlayerList();
   renderPlayers();
 }
 
-function renderPlayerList() {
-  elements.playerList.innerHTML = "";
-  elements.emptyState.classList.toggle("hidden", state.players.length > 0);
+function renderBoardsTabs() {
+  elements.boardsTabs.innerHTML = "";
 
   const fragment = document.createDocumentFragment();
 
-  state.players.forEach((player) => {
+  state.boards.forEach((board) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "board-tab";
+    button.classList.toggle("is-active", board.id === state.activeBoardId);
+    button.textContent = board.name;
+    button.title = board.name;
+    button.addEventListener("click", () => selectBoard(board.id));
+    fragment.appendChild(button);
+  });
+
+  elements.boardsTabs.appendChild(fragment);
+}
+
+function renderPlayerList() {
+  elements.playerList.innerHTML = "";
+  const activePlayers = getActivePlayers();
+  elements.emptyState.classList.toggle("hidden", activePlayers.length > 0);
+
+  const fragment = document.createDocumentFragment();
+
+  activePlayers.forEach((player) => {
     const item = elements.playerItemTemplate.content.firstElementChild.cloneNode(true);
     const summaryButton = item.querySelector(".player-summary");
     const editButton = item.querySelector(".edit-button");
@@ -498,7 +873,7 @@ function renderPlayers() {
   const fragment = document.createDocumentFragment();
   const benchFragment = document.createDocumentFragment();
 
-  state.players.forEach((player) => {
+  getActivePlayers().forEach((player) => {
     const marker = document.createElement("button");
     marker.type = "button";
     marker.className = "player-marker";
@@ -561,6 +936,7 @@ function stopDragging(event) {
 
   state.draggingPlayerId = null;
   state.dragPointerId = null;
+  persistBoards();
   syncUrlFromState();
   renderPlayers();
 }
@@ -571,7 +947,7 @@ function handleDocumentPointerDown(event) {
   }
 
   const interactiveTarget = event.target.closest(
-    ".player-marker, .player-summary, .edit-button, .delete-button, #player-form, #cancel-edit, #delete-player, #reset-board"
+    ".player-marker, .player-summary, .edit-button, .delete-button, #player-form, #cancel-edit, #delete-player, #reset-board, .board-tab, #add-board, #rename-board, #delete-board"
   );
 
   if (!interactiveTarget) {
@@ -582,16 +958,20 @@ function handleDocumentPointerDown(event) {
 function updatePlayerPosition(playerId, event) {
   const nextPlacement = resolveBoardPlacement(event);
 
-  state.players = state.players.map((player) =>
-    player.id === playerId
-      ? {
-          ...player,
-          zone: nextPlacement.zone,
-          x: nextPlacement.x,
-          y: nextPlacement.y,
-        }
-      : player
-  );
+  updateActiveBoard((board) => ({
+    ...board,
+    shareKey: "",
+    players: board.players.map((player) =>
+      player.id === playerId
+        ? {
+            ...player,
+            zone: nextPlacement.zone,
+            x: nextPlacement.x,
+            y: nextPlacement.y,
+          }
+        : player
+    ),
+  }));
 
   renderPlayers();
 }
@@ -673,15 +1053,15 @@ function escapeHtml(value) {
     .replaceAll("'", "&#39;");
 }
 
-function createPlayerId() {
+function createEntityId(prefix) {
   if (window.crypto && typeof window.crypto.getRandomValues === "function") {
     const randomBytes = new Uint8Array(4);
     window.crypto.getRandomValues(randomBytes);
     const randomSuffix = Array.from(randomBytes, (byte) => byte.toString(36).padStart(2, "0")).join("");
-    return `p${Date.now().toString(36)}${randomSuffix}`;
+    return `${prefix}${Date.now().toString(36)}${randomSuffix}`;
   }
 
-  return `p${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`;
+  return `${prefix}${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`;
 }
 
 function resolveBoardPlacement(event) {
