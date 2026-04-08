@@ -2,8 +2,6 @@
 
 declare(strict_types=1);
 
-session_start();
-
 define('APP_ROOT', dirname(__DIR__));
 
 function load_env_file(string $filePath): void
@@ -106,6 +104,27 @@ function env_value(string $key, ?string $default = null): ?string
     return (string) $value;
 }
 
+function env_flag(string $key, bool $default = false): bool
+{
+    $value = env_value($key);
+
+    if ($value === null) {
+        return $default;
+    }
+
+    $normalized = strtolower(trim($value));
+
+    if (in_array($normalized, ['1', 'true', 'yes', 'on'], true)) {
+        return true;
+    }
+
+    if (in_array($normalized, ['0', 'false', 'no', 'off'], true)) {
+        return false;
+    }
+
+    return $default;
+}
+
 function app_env(): string
 {
     $configuredEnv = strtolower((string) env_value('APP_ENV', ''));
@@ -127,6 +146,55 @@ function app_env(): string
 
     return 'production';
 }
+
+function request_is_https(): bool
+{
+    $https = strtolower((string) ($_SERVER['HTTPS'] ?? ''));
+
+    if ($https !== '' && $https !== 'off') {
+        return true;
+    }
+
+    $forwardedProto = strtolower((string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? ''));
+
+    if ($forwardedProto === 'https') {
+        return true;
+    }
+
+    return (string) ($_SERVER['SERVER_PORT'] ?? '') === '443';
+}
+
+function configure_session(): void
+{
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        return;
+    }
+
+    $sessionName = env_value('APP_SESSION_NAME', 'playmarker_session') ?? 'playmarker_session';
+    $sessionPath = app_base_path();
+    $cookiePath = $sessionPath === '' ? '/' : $sessionPath . '/';
+    $sessionDomain = trim((string) env_value('APP_SESSION_DOMAIN', ''));
+    $sameSite = env_value('APP_SESSION_SAMESITE', 'Lax') ?? 'Lax';
+    $secureCookie = env_flag('APP_SESSION_SECURE', request_is_https());
+    $cookieParams = [
+        'lifetime' => 0,
+        'path' => $cookiePath,
+        'secure' => $secureCookie,
+        'httponly' => true,
+        'samesite' => $sameSite,
+    ];
+
+    if ($sessionDomain !== '') {
+        $cookieParams['domain'] = $sessionDomain;
+    }
+
+    session_name($sessionName);
+    session_set_cookie_params($cookieParams);
+
+    session_start();
+}
+
+configure_session();
 
 function google_client_id(): string
 {
