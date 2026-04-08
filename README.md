@@ -2,7 +2,7 @@
 
 PlayMarker es una pizarra tactica web para organizar alineaciones de futbol, mover jugadores sobre la cancha y dejar suplentes en la banca con una interfaz simple de arrastrar y soltar.
 
-La aplicacion funciona completamente en el navegador, sin backend y sin dependencias de build. El estado del tablero se guarda en la URL para que puedas compartir una alineacion enviando el enlace.
+La aplicacion ahora se sirve desde una estructura PHP liviana inspirada en `fulbo`, pero sigue funcionando principalmente en el navegador y sin dependencias de build. El estado del tablero se guarda en la URL para que puedas compartir una alineacion enviando el enlace.
 
 ## Caracteristicas
 
@@ -30,15 +30,27 @@ Cada jugador se representa con una ficha visual que incluye:
 
 ## Como usarlo
 
-Como es un proyecto estatico, puedes abrirlo directamente en el navegador o levantar un servidor local simple.
+Como es un proyecto PHP liviano, lo ideal es ejecutarlo en Apache/XAMPP o con el servidor embebido de PHP. Tambien se mantiene un `index.html` de compatibilidad para abrirlo de forma estatica.
 
-### Opcion 1: abrir el archivo
+### Opcion 1: servidor embebido de PHP
+
+```powershell
+php -S localhost:8000
+```
+
+Luego abre `http://localhost:8000`.
+
+### Opcion 2: Apache/XAMPP
+
+Apunta el virtual host o `DocumentRoot` a la carpeta del proyecto y asegurate de que `AllowOverride All` este habilitado para usar [`.htaccess`](/C:/Users/paulo/Proyectos/playmarker/.htaccess).
+
+### Opcion 3: abrir el fallback estatico
 
 Abre [index.html](/C:/Users/paulo/Proyectos/playmarker/index.html) en tu navegador.
 
-### Opcion 2: servidor local
+### Opcion 4: servidor local simple
 
-Si prefieres ejecutarlo con servidor local, puedes usar cualquiera de estas opciones:
+Si prefieres servir el fallback estatico, puedes usar cualquiera de estas opciones:
 
 ```powershell
 python -m http.server 8000
@@ -81,15 +93,20 @@ Tambien existe compatibilidad con un formato legacy basado en multiples parametr
 
 ## Estructura del proyecto
 
-- [index.html](/C:/Users/paulo/Proyectos/playmarker/index.html): estructura de la interfaz, panel lateral, tablero, banca y template de jugadores.
-- [styles.css](/C:/Users/paulo/Proyectos/playmarker/styles.css): estilos visuales, layout responsive, cancha, banca y fichas.
-- [app.js](/C:/Users/paulo/Proyectos/playmarker/app.js): logica de estado, formulario, renderizado, drag and drop y serializacion en URL.
-- [favicon.svg](/C:/Users/paulo/Proyectos/playmarker/favicon.svg), [favicon.ico](/C:/Users/paulo/Proyectos/playmarker/favicon.ico), [favicon-64.png](/C:/Users/paulo/Proyectos/playmarker/favicon-64.png): iconos de la aplicacion.
-- [og-image.png](/C:/Users/paulo/Proyectos/playmarker/og-image.png): imagen usada para compartir en redes.
+- [index.php](/C:/Users/paulo/Proyectos/playmarker/index.php): front controller principal.
+- [config/routes.php](/C:/Users/paulo/Proyectos/playmarker/config/routes.php): definicion de rutas.
+- [controllers/MainController.php](/C:/Users/paulo/Proyectos/playmarker/controllers/MainController.php): render base de layouts, vistas y respuestas JSON.
+- [controllers/SitioController.php](/C:/Users/paulo/Proyectos/playmarker/controllers/SitioController.php): controlador de la home y 404.
+- [templates/layout/main/index.php](/C:/Users/paulo/Proyectos/playmarker/templates/layout/main/index.php): layout HTML principal.
+- [views/sitio/home.php](/C:/Users/paulo/Proyectos/playmarker/views/sitio/home.php): vista principal de la pizarra.
+- [assets/css/styles.css](/C:/Users/paulo/Proyectos/playmarker/assets/css/styles.css): estilos visuales, layout responsive, cancha, banca y fichas.
+- [assets/js/app.js](/C:/Users/paulo/Proyectos/playmarker/assets/js/app.js): logica de estado, formulario, renderizado, drag and drop y serializacion en URL.
+- [assets/images/favicon.svg](/C:/Users/paulo/Proyectos/playmarker/assets/images/favicon.svg), [assets/images/favicon.ico](/C:/Users/paulo/Proyectos/playmarker/assets/images/favicon.ico), [assets/images/favicon-64.png](/C:/Users/paulo/Proyectos/playmarker/assets/images/favicon-64.png): iconos de la aplicacion.
+- [assets/images/og-image.png](/C:/Users/paulo/Proyectos/playmarker/assets/images/og-image.png): imagen usada para compartir en redes.
 
 ## Detalles tecnicos
 
-- Proyecto frontend vanilla: HTML, CSS y JavaScript.
+- Proyecto PHP liviano con frontend vanilla: PHP, HTML, CSS y JavaScript.
 - Sin frameworks y sin proceso de compilacion.
 - Uso de `pointer events` para el drag and drop.
 - Uso de `history.replaceState` para sincronizar la URL sin recargar.
