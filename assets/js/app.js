@@ -1,37 +1,12 @@
 const POSITION_OPTIONS = ["arquero", "defensa", "medio", "delantero"];
 const STATE_QUERY_KEY = "s";
-const LEGACY_PLAYER_QUERY_KEY = "player";
-const BOARDS_STORAGE_KEY = "playmarker:boards";
-const ACTIVE_BOARD_STORAGE_KEY = "playmarker:active-board";
-const SHARED_BOARD_PREFIX = "Compartido";
-const POSITION_CODES = {
-  arquero: "0",
-  defensa: "1",
-  medio: "2",
-  delantero: "3",
-};
-const CODE_TO_POSITION = {
-  0: "arquero",
-  1: "defensa",
-  2: "medio",
-  3: "delantero",
-};
-const TEAM_CODES = {
-  home: "h",
-  away: "a",
-};
-const CODE_TO_TEAM = {
-  h: "home",
-  a: "away",
-};
-const ZONE_CODES = {
-  pitch: "p",
-  bench: "b",
-};
-const CODE_TO_ZONE = {
-  p: "pitch",
-  b: "bench",
-};
+const POSITION_CODES = { arquero: "0", defensa: "1", medio: "2", delantero: "3" };
+const CODE_TO_POSITION = { 0: "arquero", 1: "defensa", 2: "medio", 3: "delantero" };
+const TEAM_CODES = { home: "h", away: "a" };
+const CODE_TO_TEAM = { h: "home", a: "away" };
+const ZONE_CODES = { pitch: "p", bench: "b" };
+const CODE_TO_ZONE = { p: "pitch", b: "bench" };
+
 const DEFAULT_POSITION = {
   pitch: {
     home: { x: 50, y: 72 },
@@ -54,12 +29,23 @@ const PLACEMENT_BOUNDS = {
   },
 };
 
+const appShell = document.querySelector(".app-shell");
+const TABLAS_ENDPOINT = appShell?.dataset.tablasEndpoint || "";
+const TABLA_TEMPLATE = appShell?.dataset.tablaTemplate || "";
+const OPEN_TABLA_TEMPLATE = appShell?.dataset.openTablaTemplate || "";
+
 const state = {
   boards: [],
   activeBoardId: null,
   selectedPlayerId: null,
   draggingPlayerId: null,
   dragPointerId: null,
+  isLoading: true,
+  isSaving: false,
+  saveStatus: {
+    message: "Cargando tablas...",
+    tone: "",
+  },
 };
 
 const elements = {
@@ -86,11 +72,9 @@ const elements = {
   addBoardButton: document.querySelector("#add-board"),
   renameBoardButton: document.querySelector("#rename-board"),
   deleteBoardButton: document.querySelector("#delete-board"),
+  saveBoardButton: document.querySelector("#save-board"),
+  boardSaveStatus: document.querySelector("#board-save-status"),
 };
-
-initializeState();
-render();
-syncUrlFromState();
 
 elements.playerForm.addEventListener("submit", handleFormSubmit);
 elements.deleteButton.addEventListener("click", handleDeleteSelected);
@@ -99,137 +83,52 @@ elements.resetBoardButton.addEventListener("click", handleResetBoard);
 elements.addBoardButton.addEventListener("click", handleCreateBoard);
 elements.renameBoardButton.addEventListener("click", handleRenameBoard);
 elements.deleteBoardButton.addEventListener("click", handleDeleteBoard);
+elements.saveBoardButton.addEventListener("click", handleSaveBoard);
 document.addEventListener("pointerdown", handleDocumentPointerDown);
 window.addEventListener("pointermove", handlePointerMove);
 window.addEventListener("pointerup", stopDragging);
 window.addEventListener("pointercancel", stopDragging);
 window.addEventListener("resize", renderPlayers);
 
-function initializeState() {
-  const persistedBoards = loadStoredBoards();
-  const persistedActiveBoardId = loadStoredActiveBoardId();
-  const sharedState = loadSharedPlayersFromUrl();
+bootstrap();
 
-  state.boards = persistedBoards;
-  state.activeBoardId = persistedActiveBoardId;
+async function bootstrap() {
+  render();
 
-  if (sharedState) {
-    const existingSharedBoard = state.boards.find((board) => board.shareKey === sharedState.shareKey);
-    const matchingBoardByPlayers = state.boards.find((board) => getBoardShareKey(board) === sharedState.shareKey);
-    const activeBoard = getActiveBoard();
-
-    if (existingSharedBoard) {
-      state.activeBoardId = existingSharedBoard.id;
-    } else if (matchingBoardByPlayers) {
-      state.boards = state.boards.map((board) =>
-        board.id === matchingBoardByPlayers.id
-          ? {
-              ...board,
-              shareKey: sharedState.shareKey,
-            }
-          : board
-      );
-      state.activeBoardId = matchingBoardByPlayers.id;
-    } else if (activeBoard && getBoardShareKey(activeBoard) === sharedState.shareKey) {
-      state.boards = state.boards.map((board) =>
-        board.id === activeBoard.id
-          ? {
-              ...board,
-              shareKey: sharedState.shareKey,
-            }
-          : board
-      );
-      state.activeBoardId = activeBoard.id;
-    } else {
-      const sharedBoard = createBoard({
-        name: buildSharedBoardName(state.boards),
-        players: sharedState.players,
-        shareKey: sharedState.shareKey,
-      });
-      state.boards = [...state.boards, sharedBoard];
-      state.activeBoardId = sharedBoard.id;
-    }
-  }
-
-  if (state.boards.length === 0) {
-    const initialBoard = createBoard({ name: "Board 1" });
-    state.boards = [initialBoard];
-    state.activeBoardId = initialBoard.id;
-  }
-
-  if (!getActiveBoard()) {
-    state.activeBoardId = state.boards[0].id;
-  }
-
-  persistBoards();
-}
-
-function loadStoredBoards() {
   try {
-    const rawBoards = window.localStorage.getItem(BOARDS_STORAGE_KEY);
-    if (!rawBoards) {
-      return [];
+    const boards = await loadBoardsFromApi();
+
+    if (boards.length > 0) {
+      state.boards = boards;
+      state.activeBoardId = boards[0].id;
+      setSaveStatus("Tablas cargadas.", "success");
+      syncUrlFromState();
+      render();
+      return;
     }
 
-    const parsedBoards = JSON.parse(rawBoards);
-    if (!Array.isArray(parsedBoards)) {
-      return [];
-    }
-
-    return parsedBoards
-      .map(normalizeStoredBoard)
-      .filter(Boolean);
+    const createdBoard = await createBoardOnServer(`Board ${state.boards.length + 1}`, []);
+    state.boards = [createdBoard];
+    state.activeBoardId = createdBoard.id;
+    setSaveStatus("Tabla inicial creada.", "success");
   } catch (error) {
-    return [];
+    const fallbackBoard = createLocalBoard({ name: "Board 1" });
+    state.boards = [fallbackBoard];
+    state.activeBoardId = fallbackBoard.id;
+    setSaveStatus("No se pudo cargar la base de datos. Puedes seguir y guardar manualmente.", "error");
+  } finally {
+    state.isLoading = false;
+    syncUrlFromState();
+    render();
   }
 }
 
-function loadStoredActiveBoardId() {
-  try {
-    const value = window.localStorage.getItem(ACTIVE_BOARD_STORAGE_KEY);
-    return typeof value === "string" && value.trim() !== "" ? value : null;
-  } catch (error) {
-    return null;
-  }
+async function loadBoardsFromApi() {
+  const response = await apiFetch(TABLAS_ENDPOINT, { method: "GET" });
+  return Array.isArray(response.tablas) ? response.tablas.map(normalizeServerBoard).filter(Boolean) : [];
 }
 
-function loadSharedPlayersFromUrl() {
-  try {
-    const searchParams = new URLSearchParams(window.location.search);
-    const compactState = searchParams.get(STATE_QUERY_KEY);
-    if (compactState) {
-      const parsedCompactState = parseCompactState(compactState);
-      if (parsedCompactState.length > 0) {
-        return {
-          players: parsedCompactState,
-          shareKey: compactState,
-        };
-      }
-    }
-
-    const serializedPlayers = searchParams.getAll(LEGACY_PLAYER_QUERY_KEY);
-    if (serializedPlayers.length === 0) {
-      return null;
-    }
-
-    const players = serializedPlayers
-      .map(parsePlayerParam)
-      .filter(Boolean);
-
-    if (players.length === 0) {
-      return null;
-    }
-
-    return {
-      players,
-      shareKey: encodeBase64Url(JSON.stringify(players.map(serializeCompactPlayer))),
-    };
-  } catch (error) {
-    return null;
-  }
-}
-
-function normalizeStoredBoard(board) {
+function normalizeServerBoard(board) {
   if (!board || typeof board !== "object") {
     return null;
   }
@@ -242,19 +141,141 @@ function normalizeStoredBoard(board) {
   const players = Array.isArray(board.players)
     ? board.players.map(normalizeStoredPlayer).filter(Boolean)
     : [];
-  const name = sanitizeBoardName(board.name) || "Board";
-  const createdAt = typeof board.createdAt === "string" && board.createdAt ? board.createdAt : new Date().toISOString();
-  const updatedAt = typeof board.updatedAt === "string" && board.updatedAt ? board.updatedAt : createdAt;
-  const shareKey = typeof board.shareKey === "string" && board.shareKey ? board.shareKey : "";
 
   return {
     id,
-    name,
+    name: sanitizeBoardName(board.name) || "Board",
     players,
-    createdAt,
-    updatedAt,
-    shareKey,
+    createdAt: typeof board.createdAt === "string" ? board.createdAt : new Date().toISOString(),
+    updatedAt: typeof board.updatedAt === "string" ? board.updatedAt : new Date().toISOString(),
+    lastOpenedAt: typeof board.lastOpenedAt === "string" ? board.lastOpenedAt : null,
+    shareCode: typeof board.shareCode === "string" ? board.shareCode : null,
+    isPublic: Boolean(board.isPublic),
+    isDirty: false,
+    isNew: false,
   };
+}
+
+function createLocalBoard({ name, players = [] } = {}) {
+  const now = new Date().toISOString();
+  return {
+    id: createEntityId("tmp"),
+    name: sanitizeBoardName(name) || `Board ${state.boards.length + 1}`,
+    players: players.map((player) => ({
+      ...player,
+      ...clampPlacementCoordinates(player.zone, player.x, player.y),
+    })),
+    createdAt: now,
+    updatedAt: now,
+    lastOpenedAt: now,
+    shareCode: null,
+    isPublic: false,
+    isDirty: true,
+    isNew: true,
+  };
+}
+
+function createBoardStatePayload(board) {
+  return {
+    version: 1,
+    name: board.name,
+    players: board.players.map((player) => ({
+      id: player.id,
+      name: player.name,
+      number: player.number,
+      position: player.position,
+      team: player.team,
+      zone: player.zone,
+      x: Number(player.x.toFixed(2)),
+      y: Number(player.y.toFixed(2)),
+    })),
+  };
+}
+
+async function createBoardOnServer(name, players = []) {
+  const response = await apiFetch(TABLAS_ENDPOINT, {
+    method: "POST",
+    body: JSON.stringify({
+      name,
+      state: {
+        version: 1,
+        name,
+        players,
+      },
+    }),
+  });
+
+  return normalizeServerBoard(response.tabla);
+}
+
+async function saveBoardOnServer(board) {
+  if (board.isNew) {
+    const response = await apiFetch(TABLAS_ENDPOINT, {
+      method: "POST",
+      body: JSON.stringify({
+        name: board.name,
+        state: createBoardStatePayload(board),
+      }),
+    });
+
+    return normalizeServerBoard(response.tabla);
+  }
+
+  const response = await apiFetch(buildBoardUrl(board.id), {
+    method: "PUT",
+    body: JSON.stringify({
+      name: board.name,
+      state: createBoardStatePayload(board),
+    }),
+  });
+
+  return normalizeServerBoard(response.tabla);
+}
+
+async function deleteBoardOnServer(boardId) {
+  await apiFetch(buildBoardUrl(boardId), {
+    method: "DELETE",
+  });
+}
+
+async function markBoardOpened(boardId) {
+  const response = await apiFetch(buildOpenBoardUrl(boardId), {
+    method: "POST",
+  });
+
+  return normalizeServerBoard(response.tabla);
+}
+
+async function apiFetch(url, options = {}) {
+  const response = await fetch(url, {
+    credentials: "same-origin",
+    headers: {
+      "Content-Type": "application/json; charset=UTF-8",
+      ...(options.headers || {}),
+    },
+    ...options,
+  });
+
+  let data = null;
+  try {
+    data = await response.json();
+  } catch (error) {
+    data = null;
+  }
+
+  if (!response.ok || !data || data.success === false) {
+    throw new Error((data && data.message) || "No se pudo completar la solicitud.");
+  }
+
+  return data;
+}
+
+function buildBoardUrl(boardId) {
+  return TABLA_TEMPLATE.replace("__TABLA_ID__", encodeURIComponent(boardId));
+}
+
+function buildOpenBoardUrl(boardId) {
+  return OPEN_TABLA_TEMPLATE.replace("__TABLA_ID__", encodeURIComponent(boardId));
 }
 
 function normalizeStoredPlayer(player) {
@@ -283,92 +304,6 @@ function normalizeStoredPlayer(player) {
   };
 }
 
-function parseCompactState(value) {
-  try {
-    const decoded = decodeBase64Url(value);
-    const parsed = JSON.parse(decoded);
-    if (!Array.isArray(parsed)) {
-      return [];
-    }
-
-    return parsed
-      .map(parseCompactPlayer)
-      .filter(Boolean);
-  } catch (error) {
-    return [];
-  }
-}
-
-function parseCompactPlayer(player) {
-  if (!Array.isArray(player) || player.length !== 8) {
-    return null;
-  }
-
-  const [id, name, number, positionCode, teamCode, zoneCode, x, y] = player;
-  const parsedPlayer = {
-    id: String(id || ""),
-    name: String(name || ""),
-    number: String(number || ""),
-    position: CODE_TO_POSITION[String(positionCode || "")] || "",
-    team: CODE_TO_TEAM[String(teamCode || "")] || "",
-    zone: CODE_TO_ZONE[String(zoneCode || "")] || "",
-    x: Number(x),
-    y: Number(y),
-  };
-
-  if (!isValidUrlPlayer(parsedPlayer)) {
-    return null;
-  }
-
-  return {
-    ...parsedPlayer,
-    position: normalizePosition(parsedPlayer.position),
-    zone: parsedPlayer.zone === "bench" ? "bench" : "pitch",
-    ...clampPlacementCoordinates(parsedPlayer.zone, parsedPlayer.x, parsedPlayer.y),
-  };
-}
-
-function parsePlayerParam(value) {
-  if (typeof value !== "string") {
-    return null;
-  }
-
-  const parts = value.split(",");
-  if (parts.length !== 8) {
-    return null;
-  }
-
-  let decodedParts;
-  try {
-    decodedParts = parts.map((part) => decodeURIComponent(part));
-  } catch (error) {
-    return null;
-  }
-
-  const [id, name, number, position, team, zone, x, y] = decodedParts;
-  const parsedPlayer = {
-    id,
-    name,
-    number,
-    position,
-    team,
-    zone,
-    x: Number(x),
-    y: Number(y),
-  };
-
-  if (!isValidUrlPlayer(parsedPlayer)) {
-    return null;
-  }
-
-  return {
-    ...parsedPlayer,
-    position: normalizePosition(parsedPlayer.position),
-    zone: parsedPlayer.zone === "bench" ? "bench" : "pitch",
-    ...clampPlacementCoordinates(parsedPlayer.zone, parsedPlayer.x, parsedPlayer.y),
-  };
-}
-
 function isValidUrlPlayer(player) {
   return (
     player &&
@@ -393,8 +328,8 @@ function serializeCompactPlayer(player) {
     POSITION_CODES[player.position],
     TEAM_CODES[player.team],
     ZONE_CODES[player.zone],
-    player.x,
-    player.y,
+    Number(player.x.toFixed(2)),
+    Number(player.y.toFixed(2)),
   ];
 }
 
@@ -412,19 +347,6 @@ function syncUrlFromState() {
   }
 }
 
-function persistBoards() {
-  try {
-    window.localStorage.setItem(BOARDS_STORAGE_KEY, JSON.stringify(state.boards));
-    if (state.activeBoardId) {
-      window.localStorage.setItem(ACTIVE_BOARD_STORAGE_KEY, state.activeBoardId);
-    } else {
-      window.localStorage.removeItem(ACTIVE_BOARD_STORAGE_KEY);
-    }
-  } catch (error) {
-    return;
-  }
-}
-
 function getActiveBoard() {
   return state.boards.find((board) => board.id === state.activeBoardId) || null;
 }
@@ -434,7 +356,25 @@ function getActivePlayers() {
   return activeBoard ? activeBoard.players : [];
 }
 
-function updateActiveBoard(updater) {
+function replaceBoard(updatedBoard, previousBoard = null) {
+  state.boards = state.boards.map((board) => {
+    if (board.id === (previousBoard ? previousBoard.id : updatedBoard.id)) {
+      return {
+        ...updatedBoard,
+        isDirty: false,
+        isNew: false,
+      };
+    }
+
+    return board;
+  });
+
+  if (previousBoard && state.activeBoardId === previousBoard.id) {
+    state.activeBoardId = updatedBoard.id;
+  }
+}
+
+function updateActiveBoard(updater, { markDirty = true } = {}) {
   const activeBoard = getActiveBoard();
   if (!activeBoard) {
     return;
@@ -446,9 +386,19 @@ function updateActiveBoard(updater) {
   }
 
   state.boards = state.boards.map((board) =>
-    board.id === activeBoard.id ? normalizeBoardTimestamps(updatedBoard, board) : board
+    board.id === activeBoard.id
+      ? normalizeBoardTimestamps({
+          ...updatedBoard,
+          isDirty: markDirty ? true : Boolean(updatedBoard.isDirty),
+          isNew: Boolean(updatedBoard.isNew),
+        }, board)
+      : board
   );
-  persistBoards();
+
+  if (markDirty) {
+    setSaveStatus("Cambios sin guardar.", "warning");
+  }
+
   syncUrlFromState();
 }
 
@@ -460,36 +410,8 @@ function normalizeBoardTimestamps(nextBoard, previousBoard) {
   };
 }
 
-function createBoard({ name, players = [], shareKey = "" } = {}) {
-  const now = new Date().toISOString();
-  return {
-    id: createEntityId("b"),
-    name: sanitizeBoardName(name) || `Board ${state.boards.length + 1}`,
-    players: players.map((player) => ({
-      ...player,
-      ...clampPlacementCoordinates(player.zone, player.x, player.y),
-    })),
-    createdAt: now,
-    updatedAt: now,
-    shareKey,
-  };
-}
-
-function getBoardShareKey(board) {
-  if (!board) {
-    return "";
-  }
-
-  return encodeBase64Url(JSON.stringify(board.players.map(serializeCompactPlayer)));
-}
-
-function buildSharedBoardName(boards) {
-  const sharedBoards = boards.filter((board) => board.name.startsWith(SHARED_BOARD_PREFIX)).length;
-  return sharedBoards === 0 ? SHARED_BOARD_PREFIX : `${SHARED_BOARD_PREFIX} ${sharedBoards + 1}`;
-}
-
 function sanitizeBoardName(value) {
-  return String(value || "").trim().slice(0, 32);
+  return String(value || "").trim().slice(0, 64);
 }
 
 function encodeBase64Url(value) {
@@ -505,9 +427,7 @@ function encodeBase64Url(value) {
 }
 
 function decodeBase64Url(value) {
-  const normalized = value
-    .replaceAll("-", "+")
-    .replaceAll("_", "/");
+  const normalized = value.replaceAll("-", "+").replaceAll("_", "/");
   const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=");
   const binary = atob(padded);
   const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
@@ -536,7 +456,6 @@ function handleFormSubmit(event) {
   if (payload.id) {
     updateActiveBoard((board) => ({
       ...board,
-      shareKey: "",
       players: board.players.map((player) =>
         player.id === payload.id
           ? {
@@ -565,7 +484,6 @@ function handleFormSubmit(event) {
 
     updateActiveBoard((board) => ({
       ...board,
-      shareKey: "",
       players: [...board.players, newPlayer],
     }));
     state.selectedPlayerId = null;
@@ -627,7 +545,6 @@ function handleDeleteSelected() {
 function handleDeletePlayer(playerId) {
   updateActiveBoard((board) => ({
     ...board,
-    shareKey: "",
     players: board.players.filter((player) => player.id !== playerId),
   }));
 
@@ -641,7 +558,6 @@ function handleDeletePlayer(playerId) {
 function handleResetBoard() {
   updateActiveBoard((board) => ({
     ...board,
-    shareKey: "",
     players: [],
   }));
   state.selectedPlayerId = null;
@@ -650,7 +566,7 @@ function handleResetBoard() {
   render();
 }
 
-function handleCreateBoard() {
+async function handleCreateBoard() {
   const nextBoardNumber = state.boards.length + 1;
   const providedName = window.prompt("Nombre del nuevo board:", `Board ${nextBoardNumber}`);
   if (providedName === null) {
@@ -658,16 +574,23 @@ function handleCreateBoard() {
   }
 
   const boardName = sanitizeBoardName(providedName) || `Board ${nextBoardNumber}`;
-  const newBoard = createBoard({ name: boardName });
-  state.boards = [...state.boards, newBoard];
-  state.activeBoardId = newBoard.id;
-  state.selectedPlayerId = null;
-  state.draggingPlayerId = null;
-  state.dragPointerId = null;
   clearError();
-  persistBoards();
-  syncUrlFromState();
-  render();
+  setSaveStatus("Creando nueva tabla...", "warning");
+
+  try {
+    const newBoard = await createBoardOnServer(boardName, []);
+    state.boards = [...state.boards, newBoard];
+    state.activeBoardId = newBoard.id;
+    state.selectedPlayerId = null;
+    state.draggingPlayerId = null;
+    state.dragPointerId = null;
+    setSaveStatus("Tabla creada.", "success");
+    syncUrlFromState();
+    render();
+  } catch (error) {
+    setSaveStatus(error.message, "error");
+    render();
+  }
 }
 
 function handleRenameBoard() {
@@ -695,7 +618,7 @@ function handleRenameBoard() {
   render();
 }
 
-function handleDeleteBoard() {
+async function handleDeleteBoard() {
   const activeBoard = getActiveBoard();
   if (!activeBoard) {
     return;
@@ -706,28 +629,82 @@ function handleDeleteBoard() {
     return;
   }
 
-  if (state.boards.length === 1) {
-    const replacementBoard = createBoard({ name: "Board 1" });
-    state.boards = [replacementBoard];
-    state.activeBoardId = replacementBoard.id;
-  } else {
+  try {
+    if (!activeBoard.isNew) {
+      setSaveStatus("Eliminando tabla...", "warning");
+      await deleteBoardOnServer(activeBoard.id);
+    }
+
     const currentBoardIndex = state.boards.findIndex((board) => board.id === activeBoard.id);
     const remainingBoards = state.boards.filter((board) => board.id !== activeBoard.id);
-    const nextBoard = remainingBoards[Math.max(0, currentBoardIndex - 1)] || remainingBoards[0];
     state.boards = remainingBoards;
-    state.activeBoardId = nextBoard ? nextBoard.id : null;
-  }
 
-  state.selectedPlayerId = null;
-  state.draggingPlayerId = null;
-  state.dragPointerId = null;
-  clearError();
-  persistBoards();
-  syncUrlFromState();
-  render();
+    if (remainingBoards.length === 0) {
+      let replacementBoard = null;
+      try {
+        replacementBoard = await createBoardOnServer("Board 1", []);
+      } catch (error) {
+        replacementBoard = createLocalBoard({ name: "Board 1" });
+      }
+
+      state.boards = [replacementBoard];
+      state.activeBoardId = replacementBoard.id;
+      setSaveStatus(
+        replacementBoard.isNew
+          ? "Tabla eliminada. Se preparo una nueva tabla local; guardala para persistirla."
+          : "Tabla eliminada. Se creo una nueva tabla vacia.",
+        replacementBoard.isNew ? "warning" : "success"
+      );
+    } else {
+      const nextBoard = remainingBoards[Math.max(0, currentBoardIndex - 1)] || remainingBoards[0];
+      state.activeBoardId = nextBoard ? nextBoard.id : null;
+      setSaveStatus("Tabla eliminada.", "success");
+      if (nextBoard) {
+        await syncBoardOpenState(nextBoard.id);
+      }
+    }
+
+    state.selectedPlayerId = null;
+    state.draggingPlayerId = null;
+    state.dragPointerId = null;
+    clearError();
+    syncUrlFromState();
+    render();
+  } catch (error) {
+    setSaveStatus(error.message, "error");
+    render();
+  }
 }
 
-function selectBoard(boardId) {
+async function handleSaveBoard() {
+  if (state.isSaving) {
+    return;
+  }
+
+  const activeBoard = getActiveBoard();
+  if (!activeBoard) {
+    return;
+  }
+
+  state.isSaving = true;
+  clearError();
+  setSaveStatus("Guardando tabla...", "warning");
+  render();
+
+  try {
+    const savedBoard = await saveBoardOnServer(activeBoard);
+    replaceBoard(savedBoard, activeBoard);
+    setSaveStatus("Tabla guardada.", "success");
+    syncUrlFromState();
+  } catch (error) {
+    setSaveStatus(error.message, "error");
+  } finally {
+    state.isSaving = false;
+    render();
+  }
+}
+
+async function selectBoard(boardId) {
   if (boardId === state.activeBoardId) {
     return;
   }
@@ -737,9 +714,34 @@ function selectBoard(boardId) {
   state.draggingPlayerId = null;
   state.dragPointerId = null;
   clearError();
-  persistBoards();
   syncUrlFromState();
+
+  const activeBoard = getActiveBoard();
+  setSaveStatus(activeBoard?.isDirty ? "Cambios sin guardar." : "Tabla cargada.", activeBoard?.isDirty ? "warning" : "");
   render();
+
+  try {
+    await syncBoardOpenState(boardId);
+  } catch (error) {
+    setSaveStatus(error.message, "error");
+    render();
+  }
+}
+
+async function syncBoardOpenState(boardId) {
+  const openedBoard = await markBoardOpened(boardId);
+  if (!openedBoard) {
+    return;
+  }
+
+  state.boards = state.boards.map((board) =>
+    board.id === openedBoard.id
+      ? {
+          ...board,
+          lastOpenedAt: openedBoard.lastOpenedAt,
+        }
+      : board
+  );
 }
 
 function selectPlayer(playerId) {
@@ -805,11 +807,36 @@ function render() {
   syncForm();
   renderPlayerList();
   renderPlayers();
+  renderSaveStatus();
+  renderActionStates();
+}
+
+function renderSaveStatus() {
+  if (!elements.boardSaveStatus) {
+    return;
+  }
+
+  elements.boardSaveStatus.textContent = state.saveStatus.message || "";
+  elements.boardSaveStatus.className = `board-save-status${state.saveStatus.tone ? ` is-${state.saveStatus.tone}` : ""}`;
+}
+
+function renderActionStates() {
+  const activeBoard = getActiveBoard();
+  const canMutate = !state.isLoading && Boolean(activeBoard);
+  const canSave = canMutate && !state.isSaving && Boolean(activeBoard?.isDirty || activeBoard?.isNew);
+
+  elements.saveBoardButton.disabled = !canSave;
+  elements.addBoardButton.disabled = state.isLoading || state.isSaving;
+  elements.renameBoardButton.disabled = !canMutate || state.isSaving;
+  elements.deleteBoardButton.disabled = !canMutate || state.isSaving;
+  elements.resetBoardButton.disabled = !canMutate || state.isSaving;
+  elements.submitButton.disabled = !canMutate || state.isSaving;
+  elements.deleteButton.disabled = !canMutate || state.isSaving || !state.selectedPlayerId;
+  elements.cancelEditButton.disabled = !canMutate || state.isSaving;
 }
 
 function renderBoardsTabs() {
   elements.boardsTabs.innerHTML = "";
-
   const fragment = document.createDocumentFragment();
 
   state.boards.forEach((board) => {
@@ -817,9 +844,13 @@ function renderBoardsTabs() {
     button.type = "button";
     button.className = "board-tab";
     button.classList.toggle("is-active", board.id === state.activeBoardId);
+    button.classList.toggle("is-dirty", Boolean(board.isDirty || board.isNew));
     button.textContent = board.name;
     button.title = board.name;
-    button.addEventListener("click", () => selectBoard(board.id));
+    button.disabled = state.isLoading;
+    button.addEventListener("click", () => {
+      void selectBoard(board.id);
+    });
     fragment.appendChild(button);
   });
 
@@ -936,8 +967,6 @@ function stopDragging(event) {
 
   state.draggingPlayerId = null;
   state.dragPointerId = null;
-  persistBoards();
-  syncUrlFromState();
   renderPlayers();
 }
 
@@ -947,7 +976,7 @@ function handleDocumentPointerDown(event) {
   }
 
   const interactiveTarget = event.target.closest(
-    ".player-marker, .player-summary, .edit-button, .delete-button, #player-form, #cancel-edit, #delete-player, #reset-board, .board-tab, #add-board, #rename-board, #delete-board"
+    ".player-marker, .player-summary, .edit-button, .delete-button, #player-form, #cancel-edit, #delete-player, #reset-board, .board-tab, #add-board, #rename-board, #delete-board, #save-board"
   );
 
   if (!interactiveTarget) {
@@ -960,7 +989,6 @@ function updatePlayerPosition(playerId, event) {
 
   updateActiveBoard((board) => ({
     ...board,
-    shareKey: "",
     players: board.players.map((player) =>
       player.id === playerId
         ? {
@@ -974,6 +1002,13 @@ function updatePlayerPosition(playerId, event) {
   }));
 
   renderPlayers();
+  renderBoardsTabs();
+  renderSaveStatus();
+  renderActionStates();
+}
+
+function setSaveStatus(message, tone = "") {
+  state.saveStatus = { message, tone };
 }
 
 function showError(message) {
@@ -985,15 +1020,8 @@ function clearError() {
 }
 
 function normalizePosition(value) {
-  const normalized = String(value || "")
-    .trim()
-    .toLowerCase();
-
-  if (normalized === "arquero" || normalized === "defensa" || normalized === "medio" || normalized === "delantero") {
-    return normalized;
-  }
-
-  return "";
+  const normalized = String(value || "").trim().toLowerCase();
+  return POSITION_OPTIONS.includes(normalized) ? normalized : "";
 }
 
 function formatPosition(position) {
@@ -1014,30 +1042,18 @@ function formatPosition(position) {
 
 function getPositionStyle(position) {
   if (position === "arquero") {
-    return {
-      accent: "rgba(6, 182, 212, 0.45)",
-      border: "rgba(6, 182, 212, 0.28)",
-    };
+    return { accent: "rgba(6, 182, 212, 0.45)", border: "rgba(6, 182, 212, 0.28)" };
   }
 
   if (position === "defensa") {
-    return {
-      accent: "rgba(34, 197, 94, 0.45)",
-      border: "rgba(34, 197, 94, 0.28)",
-    };
+    return { accent: "rgba(34, 197, 94, 0.45)", border: "rgba(34, 197, 94, 0.28)" };
   }
 
   if (position === "medio") {
-    return {
-      accent: "rgba(245, 158, 11, 0.45)",
-      border: "rgba(245, 158, 11, 0.28)",
-    };
+    return { accent: "rgba(245, 158, 11, 0.45)", border: "rgba(245, 158, 11, 0.28)" };
   }
 
-  return {
-    accent: "rgba(239, 68, 68, 0.45)",
-    border: "rgba(239, 68, 68, 0.28)",
-  };
+  return { accent: "rgba(239, 68, 68, 0.45)", border: "rgba(239, 68, 68, 0.28)" };
 }
 
 function clamp(value, min, max) {

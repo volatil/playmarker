@@ -1,4 +1,9 @@
-<div class="app-shell">
+<div
+  class="app-shell"
+  data-tablas-endpoint="<?= htmlspecialchars(app_url('/api/tablas'), ENT_QUOTES, 'UTF-8') ?>"
+  data-open-tabla-template="<?= htmlspecialchars(app_url('/api/tablas/__TABLA_ID__/abrir'), ENT_QUOTES, 'UTF-8') ?>"
+  data-tabla-template="<?= htmlspecialchars(app_url('/api/tablas/__TABLA_ID__'), ENT_QUOTES, 'UTF-8') ?>"
+>
   <aside class="sidebar">
     <div class="brand-card">
       <p class="eyebrow">Pizarra tactica</p>
@@ -103,8 +108,12 @@
         <h2>Arrastra las fichas dentro de la cancha</h2>
       </div>
       <div class="board-header-actions">
-        <p class="board-tip">Toca o haz clic sobre un jugador para editarlo desde el panel lateral.</p>
+        <div class="board-status-wrap">
+          <p class="board-tip">Toca o haz clic sobre un jugador para editarlo desde el panel lateral.</p>
+          <p class="board-save-status" id="board-save-status" role="status" aria-live="polite"></p>
+        </div>
         <div class="board-actions">
+          <button class="primary-button" id="save-board" type="button">Guardar</button>
           <button class="ghost-button" id="rename-board" type="button">Renombrar board</button>
           <button class="ghost-button" id="delete-board" type="button">Eliminar board</button>
           <button class="primary-button" id="add-board" type="button">Nuevo board</button>
