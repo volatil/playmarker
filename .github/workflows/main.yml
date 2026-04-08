@@ -1,0 +1,76 @@
+name: 🚀 Deploy website on push
+on:
+  push:
+    branches:
+      - main
+jobs:
+  web-deploy:
+    name: 🎉 Deploy
+    runs-on: ubuntu-latest
+    steps:
+    - name: 🚚 Get latest code
+      uses: actions/checkout@v4
+      # with:
+      #   fetch-depth: 1
+      #   show-progress: true
+      #   filter: blob:none
+      #   sparse-checkout-cone-mode: true
+      #   sparse-checkout: |
+      #     assets/css
+      #     assets/images/beneficios
+      #     assets/images/carrusel
+      #     assets/images/categoriasconimagen
+      #     assets/images/detalle
+      #     assets/images/marcas
+      #     assets/images/mediosdepagofooter
+      #     assets/images/redes
+      #     assets/images/seguimientopedido
+      #     assets/images/202501252049entregainmediata.png
+      #     assets/images/error.png
+      #     assets/images/favicon100x100.jpg
+      #     assets/images/favicon100x100.png
+      #     assets/images/fondobannerpormodelo.jpg
+      #     assets/images/logo.png
+      #     assets/images/logo1200x630.jpg
+      #     assets/images/lupa.svg
+      #     assets/images/wspicon.png
+      #     assets/js
+      #     controllers
+      #     helpers
+      #     template
+      #     test
+      #     views
+      #     .htaccess
+      #     apple-touch-icon-precomposed.png
+      #     apple-touch-icon.png
+      #     index.php
+      #     php.ini
+      #     robots.txt
+      #     routes.php
+      #     sitemap.xml
+
+    # NUEVO: Cachear el estado del servidor FTP
+    - name: 📦 Cache FTP Deploy State
+      uses: actions/cache@v4
+      with:
+        path: .ftp-deploy-sync-state.json
+        key: ftp-state-${{ github.sha }}
+        restore-keys: |
+          ftp-state-
+
+    - name: 📂 Sync files
+      uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+      with:
+        server: ftp.volatil.cl
+        username: ${{ secrets.ftp_user }}
+        password: ${{ secrets.ftp_password }}
+        protocol: ftps
+        port: 21
+        log-level: minimal  # Cambiado de 'standard' a 'minimal'
+        exclude: |
+          .git*/**
+          logs.log
+          db/**
+          AGENTS.md
+          DESIGN.md
+          .codex/*
