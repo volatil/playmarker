@@ -8,7 +8,9 @@ class SitioController extends MainController
 
     public function home(): void
     {
-        if (!is_logged_in()) {
+        $requestedBoardId = trim((string) ($_GET['tablero'] ?? ''));
+
+        if (!is_logged_in() && $requestedBoardId === '') {
             $meta = $this->metaDefaults();
             $meta['title'] = 'Iniciar sesion | PlayMarker';
             $meta['description'] = 'Accede con Google para usar PlayMarker.';
@@ -24,6 +26,7 @@ class SitioController extends MainController
         $this->render('sitio/home.php', [
             'meta' => $this->metaDefaults(),
             'user' => current_user(),
+            'requestedBoardId' => $requestedBoardId,
         ]);
     }
 

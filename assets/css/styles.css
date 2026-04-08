@@ -399,6 +399,29 @@ form {
   color: var(--accent-dark);
 }
 
+.shared-board-message {
+  margin: 0 0 12px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(107, 72, 34, 0.14);
+  background: rgba(255, 255, 255, 0.62);
+  color: var(--text);
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.shared-board-message.is-error {
+  color: #9f1d1d;
+  border-color: rgba(159, 29, 29, 0.18);
+  background: rgba(254, 242, 242, 0.92);
+}
+
+.shared-board-message.is-warning {
+  color: var(--accent-dark);
+  border-color: rgba(142, 52, 18, 0.16);
+  background: rgba(255, 247, 237, 0.92);
+}
+
 .primary-button[disabled],
 .ghost-button[disabled],
 .danger-button[disabled],

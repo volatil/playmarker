@@ -1,6 +1,9 @@
 <div
   class="app-shell"
+  data-is-authenticated="<?= isset($user) && is_object($user) ? '1' : '0' ?>"
+  data-initial-board-id="<?= htmlspecialchars((string) ($requestedBoardId ?? ''), ENT_QUOTES, 'UTF-8') ?>"
   data-tablas-endpoint="<?= htmlspecialchars(app_url('/api/tablas'), ENT_QUOTES, 'UTF-8') ?>"
+  data-shared-tabla-template="<?= htmlspecialchars(app_url('/api/tablas/__TABLA_ID__/shared'), ENT_QUOTES, 'UTF-8') ?>"
   data-open-tabla-template="<?= htmlspecialchars(app_url('/api/tablas/__TABLA_ID__/abrir'), ENT_QUOTES, 'UTF-8') ?>"
   data-tabla-template="<?= htmlspecialchars(app_url('/api/tablas/__TABLA_ID__'), ENT_QUOTES, 'UTF-8') ?>"
 >
@@ -126,7 +129,9 @@
         <div class="boards-tabs" id="boards-tabs" aria-label="Boards disponibles"></div>
       </div>
 
-      <div class="board-layout">
+      <div class="shared-board-message hidden" id="shared-board-message" role="status" aria-live="polite"></div>
+
+      <div class="board-layout" id="board-layout">
         <div class="pitch" id="pitch" aria-label="Cancha de futbol interactiva">
           <div class="pitch-markings">
             <div class="half-line"></div>

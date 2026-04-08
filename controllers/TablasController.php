@@ -60,6 +60,22 @@ class TablasController extends MainController
         $this->methodNotAllowed(['PUT', 'DELETE']);
     }
 
+    public function shared(string $boardId): void
+    {
+        $method = strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'));
+
+        if ($method !== 'GET') {
+            $this->methodNotAllowed(['GET']);
+        }
+
+        $board = $this->findSharedBoardOrFail($boardId, current_user());
+
+        $this->renderJson([
+            'success' => true,
+            'tabla' => $board,
+        ]);
+    }
+
     public function open(string $boardId): void
     {
         $user = $this->requireAuthenticatedUser();
@@ -316,6 +332,58 @@ class TablasController extends MainController
         }
 
         return $this->mapBoardRow($row);
+    }
+
+    private function findSharedBoardOrFail(string $boardId, ?object $user): array
+    {
+        $row = $this->findBoardRowById($boardId);
+
+        if (!is_array($row)) {
+            $this->renderJson([
+                'success' => false,
+                'message' => 'La tabla no existe.',
+            ], 404);
+        }
+
+        $ownerId = trim((string) ($row['usuario_id'] ?? ''));
+        $viewerId = trim((string) ($user->id ?? ''));
+        $isOwner = $ownerId !== '' && $viewerId !== '' && $ownerId === $viewerId;
+        $isPublic = (int) ($row['es_publica'] ?? 0) === 1;
+
+        if (!$isPublic && !$isOwner) {
+            $this->renderJson([
+                'success' => false,
+                'message' => 'Este tablero es privado.',
+            ], 403);
+        }
+
+        return $this->mapBoardRow($row);
+    }
+
+    private function findBoardRowById(string $boardId): ?array
+    {
+        $statement = db_connection()->prepare(
+            'SELECT
+                id,
+                usuario_id,
+                nombre,
+                estado_json,
+                es_publica,
+                codigo_compartir,
+                creado_en,
+                actualizado_en,
+                ultima_vez_abierta_en
+            FROM tablas
+            WHERE id = :id
+            LIMIT 1'
+        );
+        $statement->execute([
+            'id' => $boardId,
+        ]);
+
+        $row = $statement->fetch();
+
+        return is_array($row) ? $row : null;
     }
 
     private function normalizeBoardPayload(array $payload, bool $allowEmptyNameFallback): array
