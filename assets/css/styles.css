@@ -378,6 +378,30 @@ h2 {
   margin-bottom: 12px;
 }
 
+.player-zone-counts {
+  margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.player-zone-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(87, 70, 54, 0.12);
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.player-zone-pill strong {
+  color: var(--text-main);
+  font-weight: 800;
+}
+
 .player-list {
   list-style: none;
   padding: 0;
@@ -1000,6 +1024,10 @@ form {
 
   .board-header {
     flex-direction: column;
+  }
+
+  .player-zone-counts {
+    width: 100%;
   }
 
   .board-header-actions,

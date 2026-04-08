@@ -66,6 +66,8 @@ const elements = {
   playerTeam: document.querySelector("#player-team"),
   playerList: document.querySelector("#player-list"),
   emptyState: document.querySelector("#empty-state"),
+  pitchCount: document.querySelector("#pitch-count"),
+  benchCount: document.querySelector("#bench-count"),
   playersLayer: document.querySelector("#players-layer"),
   benchLayer: document.querySelector("#bench-layer"),
   pitch: document.querySelector("#pitch"),
@@ -466,6 +468,21 @@ function canEditActiveBoard() {
 function getActivePlayers() {
   const activeBoard = getActiveBoard();
   return activeBoard ? activeBoard.players : [];
+}
+
+function getActivePlayerZoneCounts() {
+  return getActivePlayers().reduce(
+    (counts, player) => {
+      if (player.zone === "bench") {
+        counts.bench += 1;
+      } else {
+        counts.pitch += 1;
+      }
+
+      return counts;
+    },
+    { pitch: 0, bench: 0 },
+  );
 }
 
 function replaceBoard(updatedBoard, previousBoard = null) {
@@ -997,7 +1014,10 @@ function renderBoardsTabs() {
 function renderPlayerList() {
   elements.playerList.innerHTML = "";
   const activePlayers = getActivePlayers();
+  const zoneCounts = getActivePlayerZoneCounts();
   elements.emptyState.classList.toggle("hidden", activePlayers.length > 0);
+  elements.pitchCount.textContent = String(zoneCounts.pitch);
+  elements.benchCount.textContent = String(zoneCounts.bench);
 
   const fragment = document.createDocumentFragment();
 

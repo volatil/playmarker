@@ -119,6 +119,10 @@ $pageMode = ($pageMode ?? 'landing') === 'board' ? 'board' : 'landing';
         <div>
           <p class="eyebrow">Jugadores</p>
           <h2>Plantilla en cancha</h2>
+          <div class="player-zone-counts" aria-live="polite">
+            <span class="player-zone-pill">Cancha: <strong id="pitch-count">0</strong></span>
+            <span class="player-zone-pill">Banca: <strong id="bench-count">0</strong></span>
+          </div>
         </div>
         <button class="ghost-button" id="reset-board" type="button">Limpiar</button>
       </div>
