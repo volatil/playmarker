@@ -103,11 +103,33 @@ button {
   text-align: center;
 }
 
+.access-panel {
+  padding: 14px 16px;
+}
+
+.login-card--sidebar {
+  width: 100%;
+  padding: 0;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
 .google-login-slot {
   display: flex;
   justify-content: center;
   min-height: 44px;
   margin-top: 20px;
+}
+
+.login-card--sidebar .google-login-slot {
+  justify-content: flex-start;
+}
+
+.login-card--sidebar .login-help {
+  margin-bottom: 0;
 }
 
 .login-help {
@@ -172,10 +194,6 @@ h2 {
   padding: 16px;
 }
 
-.session-panel {
-  padding: 14px 16px;
-}
-
 .session-card,
 .session-user {
   display: flex;
@@ -229,7 +247,7 @@ h2 {
   white-space: nowrap;
 }
 
-.sidebar .panel:first-of-type {
+.sidebar .player-panel {
   flex: 1;
   min-height: 0;
   display: flex;
@@ -847,6 +865,10 @@ form {
     padding: 22px 18px;
   }
 
+  .login-card--sidebar {
+    padding: 0;
+  }
+
   .sidebar,
   .board-section {
     padding: 12px;
@@ -894,6 +916,11 @@ form {
   .logout-button {
     width: 100%;
     text-align: center;
+  }
+
+  .login-card--sidebar .google-login-slot,
+  .login-card--sidebar .google-login-slot > div {
+    width: 100%;
   }
 
   .pitch-frame {

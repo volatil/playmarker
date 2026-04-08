@@ -10,22 +10,10 @@ class SitioController extends MainController
     {
         $requestedBoardId = trim((string) ($_GET['tablero'] ?? ''));
 
-        if (!is_logged_in() && $requestedBoardId === '') {
-            $meta = $this->metaDefaults();
-            $meta['title'] = 'Iniciar sesion | PlayMarker';
-            $meta['description'] = 'Accede con Google para usar PlayMarker.';
-            $meta['ogDescription'] = $meta['description'];
-            $meta['scripts'] = [];
-
-            $this->render('sitio/login.php', [
-                'meta' => $meta,
-                'googleClientId' => google_client_id(),
-            ]);
-        }
-
         $this->render('sitio/home.php', [
             'meta' => $this->metaDefaults(),
             'user' => current_user(),
+            'googleClientId' => google_client_id(),
             'requestedBoardId' => $requestedBoardId,
         ]);
     }
