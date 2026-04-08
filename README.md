@@ -1,3 +1,23 @@
+<!-- 
+-> C:\Windows\System32\drivers\etc\HOSTS
+127.0.0.1   golesdebarrio.local.cl
+
+C:\xampp\apache\conf\extra\httpd-xampp.conf
+<VirtualHost *:80>
+	DocumentRoot "C:\xampp\htdocs\clickzapatilla_php"
+	ServerName clickzapatilla.local.com
+	<Directory "C:\xampp\htdocs\clickzapatilla_php">
+	</Directory>
+</VirtualHost>
+
+en "C:\xampp\apache\conf\httpd.conf" agrega
+<Directory "D:/Proyectos/clickzapatilla_php">
+    Options Indexes FollowSymLinks
+    AllowOverride All
+    Require all granted
+</Directory>
+-->
+
 # PlayMarker
 
 PlayMarker es una pizarra tactica web para organizar alineaciones de futbol, mover jugadores sobre la cancha y dejar suplentes en la banca con una interfaz simple de arrastrar y soltar.
