@@ -1,9 +1,11 @@
 <?php
 $isAuthenticated = isset($user) && is_object($user);
 $safeGoogleClientId = htmlspecialchars($googleClientId ?? '', ENT_QUOTES, 'UTF-8');
+$pageMode = ($pageMode ?? 'landing') === 'board' ? 'board' : 'landing';
 ?>
 <div
   class="app-shell"
+  data-page-mode="<?= htmlspecialchars($pageMode, ENT_QUOTES, 'UTF-8') ?>"
   data-is-authenticated="<?= $isAuthenticated ? '1' : '0' ?>"
   data-initial-board-id="<?= htmlspecialchars((string) ($requestedBoardId ?? ''), ENT_QUOTES, 'UTF-8') ?>"
   data-tablas-endpoint="<?= htmlspecialchars(app_url('/api/tablas'), ENT_QUOTES, 'UTF-8') ?>"
@@ -11,6 +13,61 @@ $safeGoogleClientId = htmlspecialchars($googleClientId ?? '', ENT_QUOTES, 'UTF-8
   data-open-tabla-template="<?= htmlspecialchars(app_url('/api/tablas/__TABLA_ID__/abrir'), ENT_QUOTES, 'UTF-8') ?>"
   data-tabla-template="<?= htmlspecialchars(app_url('/api/tablas/__TABLA_ID__'), ENT_QUOTES, 'UTF-8') ?>"
 >
+<?php if ($pageMode === 'landing'): ?>
+  <main class="landing-shell">
+    <section class="landing-hero brand-card">
+      <div class="landing-hero-copy">
+        <p class="eyebrow">Pizarra tactica colaborativa</p>
+        <h1>PlayMarker convierte ideas de cancha en tableros listos para compartir.</h1>
+        <p class="subtitle landing-intro">Crea alineaciones, mueve fichas sobre la cancha y guarda cada tablero en tu cuenta para retomarlo cuando quieras.</p>
+
+        <div class="landing-cta-group">
+        <?php if ($isAuthenticated): ?>
+          <button class="primary-button landing-create-button" id="landing-create-board" type="button">Crear mi tablero</button>
+        <?php else: ?>
+          <div class="login-status" id="login-status" role="status" aria-live="polite"></div>
+          <div id="google-login" class="google-login-slot"></div>
+          <p class="login-help landing-help">Entra con Google para crear tableros, guardarlos y volver a abrirlos desde cualquier dispositivo.</p>
+        <?php endif; ?>
+        </div>
+
+        <?php if ($isAuthenticated): ?>
+        <p class="login-help landing-help">Tu sesion ya esta activa. Crea un tablero vacio y te llevamos directo a la pizarra para empezar a mover jugadores.</p>
+        <p class="landing-inline-status" id="landing-create-status" role="status" aria-live="polite"></p>
+        <?php endif; ?>
+      </div>
+
+      <div class="landing-highlight panel">
+        <p class="eyebrow">Que puedes hacer</p>
+        <ul class="landing-feature-list">
+          <li>Armar alineaciones en segundos con fichas de local y visita.</li>
+          <li>Mover jugadores entre cancha y banca con drag and drop.</li>
+          <li>Guardar tableros en tu cuenta y compartir vistas con enlace.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="landing-info-grid" id="como-funciona">
+      <article class="panel landing-step-card">
+        <p class="eyebrow">Paso 1</p>
+        <h2>Registrate o inicia sesion</h2>
+        <p class="subtitle">Accede con Google para asociar tus tableros a tu cuenta y no perder el trabajo entre sesiones.</p>
+      </article>
+
+      <article class="panel landing-step-card">
+        <p class="eyebrow">Paso 2</p>
+        <h2>Crea tu tablero</h2>
+        <p class="subtitle">Empieza con una cancha vacia, agrega jugadores, define roles y acomoda cada ficha donde la necesites.</p>
+      </article>
+
+      <article class="panel landing-step-card">
+        <p class="eyebrow">Paso 3</p>
+        <h2>Ajusta y comparte</h2>
+        <p class="subtitle">Guarda cambios, reabre tableros propios y comparte vistas para mostrar una idea tactica en segundos.</p>
+      </article>
+    </section>
+  </main>
+<?php else: ?>
   <aside class="sidebar">
     <div class="brand-card">
       <p class="eyebrow">Pizarra tactica</p>
@@ -175,6 +232,7 @@ $safeGoogleClientId = htmlspecialchars($googleClientId ?? '', ENT_QUOTES, 'UTF-8
       </div>
     </section>
   </main>
+<?php endif; ?>
 </div>
 
 <?php if (!$isAuthenticated): ?>

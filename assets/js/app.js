@@ -24,12 +24,18 @@ const PLACEMENT_BOUNDS = {
 };
 
 const appShell = document.querySelector(".app-shell");
+const PAGE_MODE = appShell?.dataset.pageMode || "landing";
 const IS_AUTHENTICATED = appShell?.dataset.isAuthenticated === "1";
 const INITIAL_BOARD_ID = String(appShell?.dataset.initialBoardId || "").trim();
 const TABLAS_ENDPOINT = appShell?.dataset.tablasEndpoint || "";
 const SHARED_TABLA_TEMPLATE = appShell?.dataset.sharedTablaTemplate || "";
 const TABLA_TEMPLATE = appShell?.dataset.tablaTemplate || "";
 const OPEN_TABLA_TEMPLATE = appShell?.dataset.openTablaTemplate || "";
+
+const landingElements = {
+  createBoardButton: document.querySelector("#landing-create-board"),
+  createStatus: document.querySelector("#landing-create-status"),
+};
 
 const state = {
   isAuthenticated: IS_AUTHENTICATED,
@@ -81,21 +87,52 @@ const elements = {
   boardLayout: document.querySelector("#board-layout"),
 };
 
-elements.playerForm.addEventListener("submit", handleFormSubmit);
-elements.deleteButton.addEventListener("click", handleDeleteSelected);
-elements.cancelEditButton.addEventListener("click", resetForm);
-elements.resetBoardButton.addEventListener("click", handleResetBoard);
-elements.addBoardButton.addEventListener("click", handleCreateBoard);
-elements.renameBoardButton.addEventListener("click", handleRenameBoard);
-elements.deleteBoardButton.addEventListener("click", handleDeleteBoard);
-elements.saveBoardButton.addEventListener("click", handleSaveBoard);
-document.addEventListener("pointerdown", handleDocumentPointerDown);
-window.addEventListener("pointermove", handlePointerMove);
-window.addEventListener("pointerup", stopDragging);
-window.addEventListener("pointercancel", stopDragging);
-window.addEventListener("resize", renderPlayers);
+if (PAGE_MODE === "board") {
+  elements.playerForm.addEventListener("submit", handleFormSubmit);
+  elements.deleteButton.addEventListener("click", handleDeleteSelected);
+  elements.cancelEditButton.addEventListener("click", resetForm);
+  elements.resetBoardButton.addEventListener("click", handleResetBoard);
+  elements.addBoardButton.addEventListener("click", handleCreateBoard);
+  elements.renameBoardButton.addEventListener("click", handleRenameBoard);
+  elements.deleteBoardButton.addEventListener("click", handleDeleteBoard);
+  elements.saveBoardButton.addEventListener("click", handleSaveBoard);
+  document.addEventListener("pointerdown", handleDocumentPointerDown);
+  window.addEventListener("pointermove", handlePointerMove);
+  window.addEventListener("pointerup", stopDragging);
+  window.addEventListener("pointercancel", stopDragging);
+  window.addEventListener("resize", renderPlayers);
 
-bootstrap();
+  bootstrap();
+} else {
+  setupLandingPage();
+}
+
+function setupLandingPage() {
+  if (!landingElements.createBoardButton) {
+    return;
+  }
+
+  landingElements.createBoardButton.addEventListener("click", () => {
+    void handleLandingCreateBoard();
+  });
+}
+
+async function handleLandingCreateBoard() {
+  if (!landingElements.createBoardButton) {
+    return;
+  }
+
+  landingElements.createBoardButton.disabled = true;
+  setLandingStatus("Creando tu tablero...", "info");
+
+  try {
+    const createdBoard = await createBoardOnServer("Board 1", []);
+    window.location.href = buildBoardPageUrl(createdBoard.id);
+  } catch (error) {
+    setLandingStatus(error.message || "No se pudo crear el tablero.", "error");
+    landingElements.createBoardButton.disabled = false;
+  }
+}
 
 async function bootstrap() {
   render();
@@ -334,6 +371,12 @@ async function apiFetch(url, options = {}) {
   }
 
   return data;
+}
+
+function buildBoardPageUrl(boardId) {
+  const nextUrl = new URL(window.location.href);
+  nextUrl.searchParams.set(BOARD_QUERY_KEY, boardId);
+  return `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`;
 }
 
 function buildBoardUrl(boardId) {
@@ -1119,6 +1162,15 @@ function setSharedAccess(message, tone = "", isBlocking = false) {
 
 function clearSharedAccess() {
   setSharedAccess("", "", false);
+}
+
+function setLandingStatus(message, tone = "") {
+  if (!landingElements.createStatus) {
+    return;
+  }
+
+  landingElements.createStatus.textContent = message || "";
+  landingElements.createStatus.className = `landing-inline-status${tone ? ` is-${tone}` : ""}`;
 }
 
 function showError(message) {

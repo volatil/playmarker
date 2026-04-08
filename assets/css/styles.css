@@ -68,6 +68,10 @@ button {
   min-height: 100vh;
 }
 
+.app-shell[data-page-mode="landing"] {
+  display: block;
+}
+
 .sidebar {
   padding: 16px;
   display: flex;
@@ -88,6 +92,93 @@ button {
 
 .brand-card {
   padding: 18px;
+}
+
+.landing-shell {
+  width: min(1200px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 28px 0 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.landing-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(280px, 0.9fr);
+  gap: 18px;
+  align-items: stretch;
+}
+
+.landing-hero-copy {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.landing-intro {
+  max-width: 58ch;
+  font-size: 1rem;
+}
+
+.landing-cta-group {
+  margin-top: 22px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+.landing-create-button {
+  text-decoration: none;
+}
+
+.landing-help,
+.landing-inline-status {
+  width: 100%;
+}
+
+.landing-inline-status {
+  min-height: 1.4rem;
+  margin: 8px 0 0;
+  font-weight: 700;
+}
+
+.landing-inline-status.is-error {
+  color: #9f1d1d;
+}
+
+.landing-inline-status.is-info {
+  color: var(--accent-dark);
+}
+
+.landing-highlight {
+  padding: 24px;
+  background:
+    linear-gradient(160deg, rgba(255, 255, 255, 0.72), rgba(255, 244, 230, 0.9)),
+    radial-gradient(circle at top right, rgba(202, 93, 45, 0.12), transparent 45%);
+}
+
+.landing-feature-list {
+  margin: 12px 0 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 10px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.landing-info-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.landing-step-card {
+  min-height: 200px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
 }
 
 .login-shell {
@@ -835,6 +926,15 @@ form {
     grid-template-columns: 1fr;
   }
 
+  .landing-shell {
+    width: min(100%, calc(100% - 28px));
+  }
+
+  .landing-hero,
+  .landing-info-grid {
+    grid-template-columns: 1fr;
+  }
+
   .sidebar,
   .board-section {
     padding: 14px;
@@ -859,6 +959,25 @@ form {
 @media (max-width: 720px) {
   .login-shell {
     padding: 16px;
+  }
+
+  .landing-shell {
+    width: min(100%, calc(100% - 24px));
+    padding: 18px 0 28px;
+  }
+
+  .landing-hero,
+  .landing-highlight,
+  .landing-step-card {
+    padding: 18px;
+  }
+
+  .landing-cta-group {
+    align-items: stretch;
+  }
+
+  .landing-cta-group > * {
+    width: 100%;
   }
 
   .login-card {

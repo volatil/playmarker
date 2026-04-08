@@ -9,12 +9,14 @@ class SitioController extends MainController
     public function home(): void
     {
         $requestedBoardId = trim((string) ($_GET['tablero'] ?? ''));
+        $pageMode = $requestedBoardId === '' ? 'landing' : 'board';
 
         $this->render('sitio/home.php', [
             'meta' => $this->metaDefaults(),
             'user' => current_user(),
             'googleClientId' => google_client_id(),
             'requestedBoardId' => $requestedBoardId,
+            'pageMode' => $pageMode,
         ]);
     }
 
