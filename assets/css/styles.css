@@ -44,6 +44,10 @@ body {
     linear-gradient(135deg, #f6efe3 0%, #efe3cf 100%);
 }
 
+a {
+  color: inherit;
+}
+
 button,
 input,
 select {
@@ -73,7 +77,8 @@ button {
 
 .brand-card,
 .panel,
-.pitch-frame {
+.pitch-frame,
+.login-card {
   background: var(--panel);
   border: 1px solid var(--panel-border);
   border-radius: 24px;
@@ -83,6 +88,51 @@ button {
 
 .brand-card {
   padding: 18px;
+}
+
+.login-shell {
+  min-height: 100vh;
+  padding: 24px;
+  display: grid;
+  place-items: center;
+}
+
+.login-card {
+  width: min(100%, 540px);
+  padding: 28px;
+  text-align: center;
+}
+
+.google-login-slot {
+  display: flex;
+  justify-content: center;
+  min-height: 44px;
+  margin-top: 20px;
+}
+
+.login-help {
+  margin: 18px 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.login-status {
+  min-height: 1.4rem;
+  margin-top: 18px;
+  font-weight: 700;
+}
+
+.login-status.is-error {
+  color: #9f1d1d;
+}
+
+.login-status.is-success {
+  color: #166534;
+}
+
+.login-status.is-info {
+  color: var(--accent-dark);
 }
 
 .eyebrow {
@@ -120,6 +170,63 @@ h2 {
 
 .panel {
   padding: 16px;
+}
+
+.session-panel {
+  padding: 14px 16px;
+}
+
+.session-card,
+.session-user {
+  display: flex;
+  align-items: center;
+}
+
+.session-card {
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.session-user {
+  gap: 12px;
+  min-width: 0;
+}
+
+.session-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(255, 255, 255, 0.75);
+  box-shadow: 0 8px 16px rgba(70, 38, 8, 0.12);
+}
+
+.session-avatar-fallback {
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, var(--accent) 0%, #e08944 100%);
+  color: #fff7ef;
+  font-family: "Barlow Condensed", sans-serif;
+  font-size: 1.4rem;
+}
+
+.session-name,
+.session-email {
+  margin: 0;
+}
+
+.session-name {
+  font-weight: 800;
+}
+
+.session-email {
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.logout-button {
+  text-decoration: none;
+  white-space: nowrap;
 }
 
 .sidebar .panel:first-of-type {
@@ -650,12 +757,25 @@ form {
     padding-top: 0;
   }
 
+  .session-card {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
   .player-list {
     flex: none;
   }
 }
 
 @media (max-width: 720px) {
+  .login-shell {
+    padding: 16px;
+  }
+
+  .login-card {
+    padding: 22px 18px;
+  }
+
   .sidebar,
   .board-section {
     padding: 12px;
@@ -693,6 +813,15 @@ form {
   .form-actions > button,
   .board-actions > button {
     flex: 1;
+  }
+
+  .session-user {
+    width: 100%;
+  }
+
+  .logout-button {
+    width: 100%;
+    text-align: center;
   }
 
   .pitch-frame {

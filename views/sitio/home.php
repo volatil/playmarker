@@ -6,6 +6,34 @@
       <p class="subtitle">Organiza alineaciones, mueve fichas y ajusta posiciones sobre la cancha.</p>
     </div>
 
+    <?php if (isset($user) && is_object($user)): ?>
+    <section class="panel session-panel">
+      <div class="session-card">
+        <div class="session-user">
+          <?php if (($user->picture ?? '') !== ''): ?>
+          <img
+            class="session-avatar"
+            src="<?= htmlspecialchars((string) $user->picture, ENT_QUOTES, 'UTF-8') ?>"
+            alt="<?= htmlspecialchars((string) ($user->name ?? $user->email ?? 'Usuario'), ENT_QUOTES, 'UTF-8') ?>"
+          >
+          <?php else: ?>
+          <div class="session-avatar session-avatar-fallback" aria-hidden="true">
+            <?= htmlspecialchars(strtoupper(substr((string) ($user->name ?? $user->email ?? 'U'), 0, 1)), ENT_QUOTES, 'UTF-8') ?>
+          </div>
+          <?php endif; ?>
+
+          <div>
+            <p class="eyebrow">Sesion activa</p>
+            <p class="session-name"><?= htmlspecialchars((string) ($user->name ?? ''), ENT_QUOTES, 'UTF-8') ?></p>
+            <p class="session-email"><?= htmlspecialchars((string) ($user->email ?? ''), ENT_QUOTES, 'UTF-8') ?></p>
+          </div>
+        </div>
+
+        <a class="ghost-button logout-button" href="<?= htmlspecialchars(app_url('/logout'), ENT_QUOTES, 'UTF-8') ?>">Cerrar sesion</a>
+      </div>
+    </section>
+    <?php endif; ?>
+
     <section class="panel">
       <div class="panel-heading">
         <div>
@@ -70,7 +98,7 @@
 
   <main class="board-section">
     <div class="board-header">
-      <div>
+      <div style="display: none;">
         <p class="eyebrow">Campo interactivo</p>
         <h2>Arrastra las fichas dentro de la cancha</h2>
       </div>

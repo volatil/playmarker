@@ -52,4 +52,34 @@ class MainController
             ],
         ];
     }
+
+    protected function decodeGoogleIdToken(string $token): ?object
+    {
+        $parts = explode('.', $token);
+
+        if (count($parts) !== 3) {
+            return null;
+        }
+
+        $payload = str_replace(['-', '_'], ['+', '/'], $parts[1]);
+        $padding = strlen($payload) % 4;
+
+        if ($padding > 0) {
+            $payload .= str_repeat('=', 4 - $padding);
+        }
+
+        $decodedPayload = base64_decode($payload, true);
+
+        if ($decodedPayload === false) {
+            return null;
+        }
+
+        $data = json_decode($decodedPayload, true);
+
+        if (!is_array($data)) {
+            return null;
+        }
+
+        return (object) $data;
+    }
 }
