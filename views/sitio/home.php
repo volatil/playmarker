@@ -109,7 +109,7 @@
       </div>
       <div class="board-header-actions">
         <div class="board-status-wrap">
-          <p class="board-tip">Toca o haz clic sobre un jugador para editarlo desde el panel lateral.</p>
+          <!-- <p class="board-tip">Haz clic sobre un jugador para editarlo desde el panel lateral.</p> -->
           <p class="board-save-status" id="board-save-status" role="status" aria-live="polite"></p>
         </div>
         <div class="board-actions">
