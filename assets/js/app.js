@@ -46,6 +46,7 @@ const state = {
   dragPointerId: null,
   isLoading: true,
   isSaving: false,
+  isUpdatingVisibility: false,
   saveStatus: {
     message: "Cargando tablas...",
     tone: "",
@@ -85,6 +86,9 @@ const elements = {
   deleteBoardButton: document.querySelector("#delete-board"),
   saveBoardButton: document.querySelector("#save-board"),
   boardSaveStatus: document.querySelector("#board-save-status"),
+  boardVisibilityToggle: document.querySelector("#board-visibility-toggle"),
+  boardVisibilityInput: document.querySelector("#board-visibility-input"),
+  boardVisibilityValue: document.querySelector("#board-visibility-value"),
   sharedBoardMessage: document.querySelector("#shared-board-message"),
   boardLayout: document.querySelector("#board-layout"),
 };
@@ -98,6 +102,7 @@ if (PAGE_MODE === "board") {
   elements.renameBoardButton.addEventListener("click", handleRenameBoard);
   elements.deleteBoardButton.addEventListener("click", handleDeleteBoard);
   elements.saveBoardButton.addEventListener("click", handleSaveBoard);
+  elements.boardVisibilityInput.addEventListener("change", handleVisibilityToggle);
   document.addEventListener("pointerdown", handleDocumentPointerDown);
   window.addEventListener("pointermove", handlePointerMove);
   window.addEventListener("pointerup", stopDragging);
@@ -329,6 +334,17 @@ async function saveBoardOnServer(board) {
     body: JSON.stringify({
       name: board.name,
       state: createBoardStatePayload(board),
+    }),
+  });
+
+  return normalizeServerBoard(response.tabla);
+}
+
+async function updateBoardVisibilityOnServer(boardId, isPublic) {
+  const response = await apiFetch(buildBoardUrl(boardId), {
+    method: "PUT",
+    body: JSON.stringify({
+      isPublic,
     }),
   });
 
@@ -831,6 +847,57 @@ async function handleSaveBoard() {
   }
 }
 
+async function handleVisibilityToggle(event) {
+  const activeBoard = getActiveBoard();
+  if (!activeBoard || !canEditActiveBoard()) {
+    event.target.checked = Boolean(activeBoard?.isPublic);
+    return;
+  }
+
+  if (activeBoard.isNew) {
+    event.target.checked = Boolean(activeBoard.isPublic);
+    setSaveStatus("Debes guardar el tablero en el servidor antes de cambiar su visibilidad.", "warning");
+    render();
+    return;
+  }
+
+  const nextVisibility = event.target.checked;
+  const previousVisibility = Boolean(activeBoard.isPublic);
+
+  if (nextVisibility === previousVisibility) {
+    return;
+  }
+
+  state.isUpdatingVisibility = true;
+  updateActiveBoard(
+    (board) => ({
+      ...board,
+      isPublic: nextVisibility,
+    }),
+    { markDirty: false }
+  );
+  setSaveStatus(nextVisibility ? "Haciendo publico el tablero..." : "Haciendo privado el tablero...", "warning");
+  render();
+
+  try {
+    const updatedBoard = await updateBoardVisibilityOnServer(activeBoard.id, nextVisibility);
+    applyBoardVisibilityUpdate(activeBoard.id, updatedBoard);
+    setSaveStatus(updatedBoard.isPublic ? "El tablero ahora es publico." : "El tablero ahora es privado.", "success");
+  } catch (error) {
+    updateActiveBoard(
+      (board) => ({
+        ...board,
+        isPublic: previousVisibility,
+      }),
+      { markDirty: false }
+    );
+    setSaveStatus(error.message || "No se pudo actualizar la visibilidad del tablero.", "error");
+  } finally {
+    state.isUpdatingVisibility = false;
+    render();
+  }
+}
+
 async function selectBoard(boardId) {
   if (boardId === state.activeBoardId) {
     return;
@@ -938,6 +1005,7 @@ function render() {
   renderPlayerList();
   renderPlayers();
   renderSaveStatus();
+  renderBoardVisibility();
   renderSharedBoardMessage();
   renderActionStates();
 }
@@ -969,11 +1037,37 @@ function renderSharedBoardMessage() {
   elements.boardLayout.classList.toggle("hidden", state.sharedAccess.isBlocking);
 }
 
+function renderBoardVisibility() {
+  if (!elements.boardVisibilityToggle || !elements.boardVisibilityInput || !elements.boardVisibilityValue) {
+    return;
+  }
+
+  const activeBoard = getActiveBoard();
+  const shouldShow = Boolean(
+    state.isAuthenticated &&
+      activeBoard &&
+      activeBoard.canEdit &&
+      !state.sharedAccess.isBlocking
+  );
+
+  elements.boardVisibilityToggle.classList.toggle("hidden", !shouldShow);
+
+  if (!shouldShow) {
+    elements.boardVisibilityInput.checked = false;
+    elements.boardVisibilityValue.textContent = "Privado";
+    return;
+  }
+
+  elements.boardVisibilityInput.checked = Boolean(activeBoard.isPublic);
+  elements.boardVisibilityValue.textContent = activeBoard.isPublic ? "Publico" : "Privado";
+}
+
 function renderActionStates() {
   const activeBoard = getActiveBoard();
   const canMutate = !state.isLoading && canEditActiveBoard();
   const canCreate = state.isAuthenticated && !state.isLoading && !state.isSaving;
   const canSave = canMutate && !state.isSaving && Boolean(activeBoard?.isDirty || activeBoard?.isNew);
+  const canToggleVisibility = canMutate && !state.isSaving && !state.isUpdatingVisibility && !activeBoard?.isNew;
 
   elements.saveBoardButton.disabled = !canSave;
   elements.addBoardButton.disabled = !canCreate;
@@ -987,6 +1081,7 @@ function renderActionStates() {
   elements.playerNumber.disabled = !canMutate || state.isSaving;
   elements.playerPosition.disabled = !canMutate || state.isSaving;
   elements.playerTeam.disabled = !canMutate || state.isSaving;
+  elements.boardVisibilityInput.disabled = !canToggleVisibility;
 }
 
 function renderBoardsTabs() {
@@ -1137,7 +1232,7 @@ function handleDocumentPointerDown(event) {
   }
 
   const interactiveTarget = event.target.closest(
-    ".player-marker, .player-summary, .edit-button, .delete-button, #player-form, #cancel-edit, #delete-player, #reset-board, .board-tab, #add-board, #rename-board, #delete-board, #save-board"
+    ".player-marker, .player-summary, .edit-button, .delete-button, #player-form, #cancel-edit, #delete-player, #reset-board, .board-tab, #add-board, #rename-board, #delete-board, #save-board, #board-visibility-toggle"
   );
 
   if (!interactiveTarget) {
@@ -1199,6 +1294,23 @@ function showError(message) {
 
 function clearError() {
   elements.formError.textContent = "";
+}
+
+function applyBoardVisibilityUpdate(boardId, persistedBoard) {
+  state.boards = state.boards.map((board) => {
+    if (board.id !== boardId) {
+      return board;
+    }
+
+    return {
+      ...board,
+      isPublic: Boolean(persistedBoard?.isPublic),
+      shareCode: typeof persistedBoard?.shareCode === "string" ? persistedBoard.shareCode : board.shareCode,
+      updatedAt: typeof persistedBoard?.updatedAt === "string" ? persistedBoard.updatedAt : board.updatedAt,
+      lastOpenedAt: typeof persistedBoard?.lastOpenedAt === "string" ? persistedBoard.lastOpenedAt : board.lastOpenedAt,
+      canEdit: persistedBoard?.canEdit ?? board.canEdit,
+    };
+  });
 }
 
 function normalizePosition(value) {

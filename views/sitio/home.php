@@ -190,6 +190,13 @@ $pageMode = ($pageMode ?? 'landing') === 'board' ? 'board' : 'landing';
         <div class="board-status-wrap">
           <!-- <p class="board-tip">Haz clic sobre un jugador para editarlo desde el panel lateral.</p> -->
           <p class="board-save-status" id="board-save-status" role="status" aria-live="polite"></p>
+          <label class="board-visibility-toggle hidden" id="board-visibility-toggle">
+            <input id="board-visibility-input" type="checkbox" role="switch" aria-label="Cambiar visibilidad del tablero">
+            <span class="board-visibility-copy">
+              <span class="board-visibility-label">Visibilidad</span>
+              <span class="board-visibility-value" id="board-visibility-value">Privado</span>
+            </span>
+          </label>
         </div>
         <div class="board-actions">
           <button class="primary-button" id="save-board" type="button">Guardar</button>

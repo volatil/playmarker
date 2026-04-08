@@ -177,7 +177,8 @@ class TablasController extends MainController
 
     private function createBoard(string $userId, array $payload): array
     {
-        $normalized = $this->normalizeBoardPayload($payload, true);
+        $metadata = $this->normalizeBoardMetadataPayload($payload, true, false);
+        $encodedState = $this->normalizeBoardStatePayload($payload, $metadata['nombre']);
         $boardId = app_uuid_v4();
 
         $statement = db_connection()->prepare(
@@ -202,8 +203,8 @@ class TablasController extends MainController
         $statement->execute([
             'id' => $boardId,
             'usuario_id' => $userId,
-            'nombre' => $normalized['nombre'],
-            'estado_json' => $normalized['estado_json'],
+            'nombre' => $metadata['nombre'],
+            'estado_json' => $encodedState,
         ]);
 
         return $this->findBoardOrFail($userId, $boardId);
@@ -211,11 +212,14 @@ class TablasController extends MainController
 
     private function updateBoard(string $userId, string $boardId, array $payload): array
     {
-        $normalized = $this->normalizeBoardPayload($payload, false);
+        $currentBoard = $this->findBoardOrFail($userId, $boardId);
+        $metadata = $this->normalizeBoardMetadataPayload($payload, false, true, $currentBoard);
+        $encodedState = $this->resolveUpdatedBoardStateJson($payload, $metadata['nombre'], $currentBoard);
         $statement = db_connection()->prepare(
             'UPDATE tablas
             SET nombre = :nombre,
-                estado_json = :estado_json
+                estado_json = :estado_json,
+                es_publica = :es_publica
             WHERE id = :id
               AND usuario_id = :usuario_id
             LIMIT 1'
@@ -223,8 +227,9 @@ class TablasController extends MainController
         $statement->execute([
             'id' => $boardId,
             'usuario_id' => $userId,
-            'nombre' => $normalized['nombre'],
-            'estado_json' => $normalized['estado_json'],
+            'nombre' => $metadata['nombre'],
+            'estado_json' => $encodedState,
+            'es_publica' => $metadata['es_publica'],
         ]);
 
         if ($statement->rowCount() === 0 && !$this->boardExists($userId, $boardId)) {
@@ -386,9 +391,17 @@ class TablasController extends MainController
         return is_array($row) ? $row : null;
     }
 
-    private function normalizeBoardPayload(array $payload, bool $allowEmptyNameFallback): array
+    private function normalizeBoardMetadataPayload(
+        array $payload,
+        bool $allowEmptyNameFallback,
+        bool $allowMissingFields,
+        ?array $currentBoard = null
+    ): array
     {
-        $name = trim((string) ($payload['nombre'] ?? $payload['name'] ?? ''));
+        $rawName = $payload['nombre'] ?? $payload['name'] ?? null;
+        $name = $rawName !== null
+            ? trim((string) $rawName)
+            : ($allowMissingFields ? (string) ($currentBoard['name'] ?? '') : '');
 
         if ($name === '' && $allowEmptyNameFallback) {
             $name = 'Board 1';
@@ -408,6 +421,20 @@ class TablasController extends MainController
             ], 422);
         }
 
+        $visibility = $this->normalizeVisibilityValue(
+            $payload['es_publica'] ?? $payload['isPublic'] ?? null,
+            $allowMissingFields ? (bool) ($currentBoard['isPublic'] ?? false) : false,
+            $allowMissingFields
+        );
+
+        return [
+            'nombre' => $name,
+            'es_publica' => $visibility ? 1 : 0,
+        ];
+    }
+
+    private function normalizeBoardStatePayload(array $payload, string $boardName): string
+    {
         $stateInput = $payload['estado'] ?? $payload['state'] ?? null;
 
         if (!is_array($stateInput)) {
@@ -417,7 +444,34 @@ class TablasController extends MainController
             ], 422);
         }
 
-        $normalizedState = $this->normalizeBoardState($name, $stateInput);
+        $normalizedState = $this->normalizeBoardState($boardName, $stateInput);
+        return $this->encodeBoardState($normalizedState);
+    }
+
+    private function resolveUpdatedBoardStateJson(array $payload, string $boardName, array $currentBoard): string
+    {
+        $stateInput = $payload['estado'] ?? $payload['state'] ?? null;
+
+        if ($stateInput === null) {
+            $currentState = $currentBoard['state'] ?? null;
+
+            if (!is_array($currentState)) {
+                $this->renderJson([
+                    'success' => false,
+                    'message' => 'No se pudo recuperar el estado actual de la tabla.',
+                ], 500);
+            }
+
+            $currentState['name'] = $boardName;
+
+            return $this->encodeBoardState($this->normalizeBoardState($boardName, $currentState));
+        }
+
+        return $this->normalizeBoardStatePayload($payload, $boardName);
+    }
+
+    private function encodeBoardState(array $normalizedState): string
+    {
         $encodedState = json_encode($normalizedState, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
         if (!is_string($encodedState) || $encodedState === '') {
@@ -427,10 +481,39 @@ class TablasController extends MainController
             ], 500);
         }
 
-        return [
-            'nombre' => $name,
-            'estado_json' => $encodedState,
-        ];
+        return $encodedState;
+    }
+
+    private function normalizeVisibilityValue(mixed $rawValue, bool $fallback, bool $allowMissing): bool
+    {
+        if ($rawValue === null) {
+            return $allowMissing ? $fallback : false;
+        }
+
+        if (is_bool($rawValue)) {
+            return $rawValue;
+        }
+
+        if (is_int($rawValue) || is_float($rawValue)) {
+            return (int) $rawValue === 1;
+        }
+
+        if (is_string($rawValue)) {
+            $normalized = strtolower(trim($rawValue));
+
+            if ($normalized === '1' || $normalized === 'true') {
+                return true;
+            }
+
+            if ($normalized === '0' || $normalized === 'false') {
+                return false;
+            }
+        }
+
+        $this->renderJson([
+            'success' => false,
+            'message' => 'El valor de visibilidad no es valido.',
+        ], 422);
     }
 
     private function normalizeBoardState(string $boardName, array $state): array
