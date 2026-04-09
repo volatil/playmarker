@@ -181,69 +181,71 @@ $pageMode = ($pageMode ?? 'landing') === 'board' ? 'board' : 'landing';
   </aside>
 
   <main class="board-section">
-    <div class="board-header">
-      <div style="display: none;">
-        <p class="eyebrow">Campo interactivo</p>
-        <h2>Arrastra las fichas dentro de la cancha</h2>
-      </div>
-      <div class="board-header-actions">
-        <div class="board-status-wrap">
-          <!-- <p class="board-tip">Haz clic sobre un jugador para editarlo desde el panel lateral.</p> -->
-          <div class="board-status-card">
-            <p class="board-save-status" id="board-save-status" role="status" aria-live="polite"></p>
-            <label class="board-visibility-toggle hidden" id="board-visibility-toggle">
-              <span class="board-visibility-copy">
-                <span class="board-visibility-label">Visibilidad</span>
-                <span class="board-visibility-value" id="board-visibility-value">Privado</span>
-              </span>
-              <input id="board-visibility-input" type="checkbox" role="switch" aria-label="Cambiar visibilidad del tablero">
-            </label>
+    <div class="board-column">
+      <div class="board-header">
+        <div style="display: none;">
+          <p class="eyebrow">Campo interactivo</p>
+          <h2>Arrastra las fichas dentro de la cancha</h2>
+        </div>
+        <div class="board-header-actions">
+          <div class="board-status-wrap">
+            <!-- <p class="board-tip">Haz clic sobre un jugador para editarlo desde el panel lateral.</p> -->
+            <div class="board-status-card">
+              <p class="board-save-status" id="board-save-status" role="status" aria-live="polite"></p>
+              <label class="board-visibility-toggle hidden" id="board-visibility-toggle">
+                <span class="board-visibility-copy">
+                  <span class="board-visibility-label">Visibilidad</span>
+                  <span class="board-visibility-value" id="board-visibility-value">Privado</span>
+                </span>
+                <input id="board-visibility-input" type="checkbox" role="switch" aria-label="Cambiar visibilidad del tablero">
+              </label>
+            </div>
+          </div>
+          <div class="board-actions">
+            <button class="primary-button" id="save-board" type="button">Guardar</button>
+            <button class="ghost-button" id="rename-board" type="button">Renombrar board</button>
+            <button class="ghost-button" id="delete-board" type="button">Eliminar board</button>
+            <button class="primary-button" id="add-board" type="button">Nuevo board</button>
           </div>
         </div>
-        <div class="board-actions">
-          <button class="primary-button" id="save-board" type="button">Guardar</button>
-          <button class="ghost-button" id="rename-board" type="button">Renombrar board</button>
-          <button class="ghost-button" id="delete-board" type="button">Eliminar board</button>
-          <button class="primary-button" id="add-board" type="button">Nuevo board</button>
-        </div>
       </div>
+
+      <section class="pitch-frame">
+        <div class="boards-bar">
+          <div class="boards-tabs" id="boards-tabs" aria-label="Boards disponibles"></div>
+        </div>
+
+        <div class="shared-board-message hidden" id="shared-board-message" role="status" aria-live="polite"></div>
+
+        <div class="board-layout" id="board-layout">
+          <div class="pitch" id="pitch" aria-label="Cancha de futbol interactiva">
+            <div class="pitch-markings">
+              <div class="half-line"></div>
+              <div class="center-circle"></div>
+              <div class="center-dot"></div>
+              <div class="penalty-box top"></div>
+              <div class="goal-box top"></div>
+              <div class="penalty-spot top"></div>
+              <div class="penalty-box bottom"></div>
+              <div class="goal-box bottom"></div>
+              <div class="penalty-spot bottom"></div>
+            </div>
+            <div class="players-layer" id="players-layer"></div>
+          </div>
+
+          <div class="bench" id="bench" aria-label="Zona de banca">
+            <div class="bench-header">
+              <p class="eyebrow">Banca</p>
+              <p class="bench-tip">Arrastra jugadores aqui para dejarlos fuera de la cancha.</p>
+            </div>
+            <div class="bench-surface">
+              <div class="bench-markings"></div>
+              <div class="bench-layer" id="bench-layer"></div>
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
-
-    <section class="pitch-frame">
-      <div class="boards-bar">
-        <div class="boards-tabs" id="boards-tabs" aria-label="Boards disponibles"></div>
-      </div>
-
-      <div class="shared-board-message hidden" id="shared-board-message" role="status" aria-live="polite"></div>
-
-      <div class="board-layout" id="board-layout">
-        <div class="pitch" id="pitch" aria-label="Cancha de futbol interactiva">
-          <div class="pitch-markings">
-            <div class="half-line"></div>
-            <div class="center-circle"></div>
-            <div class="center-dot"></div>
-            <div class="penalty-box top"></div>
-            <div class="goal-box top"></div>
-            <div class="penalty-spot top"></div>
-            <div class="penalty-box bottom"></div>
-            <div class="goal-box bottom"></div>
-            <div class="penalty-spot bottom"></div>
-          </div>
-          <div class="players-layer" id="players-layer"></div>
-        </div>
-
-        <div class="bench" id="bench" aria-label="Zona de banca">
-          <div class="bench-header">
-            <p class="eyebrow">Banca</p>
-            <p class="bench-tip">Arrastra jugadores aqui para dejarlos fuera de la cancha.</p>
-          </div>
-          <div class="bench-surface">
-            <div class="bench-markings"></div>
-            <div class="bench-layer" id="bench-layer"></div>
-          </div>
-        </div>
-      </div>
-    </section>
   </main>
 <?php endif; ?>
 </div>

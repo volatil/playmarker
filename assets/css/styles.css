@@ -358,6 +358,7 @@ h2 {
   flex-direction: column;
   align-items: flex-end;
   gap: 12px;
+  width: 100%;
 }
 
 .board-status-wrap {
@@ -719,12 +720,26 @@ form {
   min-height: 0;
 }
 
+.board-column {
+  width: min(100%, 900px);
+  align-self: center;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.board-header {
+  width: 100%;
+}
+
 .pitch-frame {
   flex: 1;
   min-height: 0;
   padding: 16px;
-  width: min(100%, 900px);
-  align-self: center;
+  width: 100%;
+  align-self: stretch;
   display: flex;
   flex-direction: column;
 }
@@ -1232,6 +1247,10 @@ form {
 
   .login-card--sidebar .google-login-slot,
   .login-card--sidebar .google-login-slot > div {
+    width: 100%;
+  }
+
+  .board-column {
     width: 100%;
   }
 
