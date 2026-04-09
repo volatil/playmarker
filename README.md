@@ -145,14 +145,36 @@ La interfaz adapta el layout para pantallas pequenas:
 - En mobile el layout pasa a una sola columna.
 - La cancha y la banca ajustan sus dimensiones para seguir siendo utilizables en pantallas reducidas.
 
-## Ideas de mejora
+## Proximos features
 
-- Guardado opcional en `localStorage`.
-- Exportar e importar alineaciones.
-- Soporte para multiples formaciones predefinidas.
-- Renombrar equipos.
-- Agregar dibujo de flechas o anotaciones tacticas.
-- Compartir mediante un boton de copiar enlace.
+### v1.1
+
+- Formaciones predefinidas: `4-3-3`, `4-4-2`, `3-5-2`, con reposicionamiento inicial automatico.
+- Renombrar equipos: permitir cambiar `Local`/`Visita` por nombres reales.
+- Copiar enlace compartido: CTA visible cuando el board sea publico.
+- Duplicar board: util para crear variantes tacticas sin partir de cero.
+- Mejor UX de guardado: autosave opcional o guardado al detectar cambios relevantes.
+
+### v1.2
+
+- Dibujo tactico: flechas, lineas y zonas sobre la cancha.
+- Notas por board: texto corto para consignas o contexto del ejercicio.
+- Exportar/importar JSON: mover tableros entre cuentas o hacer respaldo.
+- Plantillas base: arrancar desde `partido`, `entrenamiento`, `salida`, etc.
+
+### v1.3
+
+- Historial / deshacer y rehacer: especialmente util con drag-and-drop.
+- Snapshots de jugada: guardar estados dentro de un mismo board.
+- Modo presentacion: vista limpia para mostrar tacticas en celular o pantalla.
+- Mejor modo lectura compartido: mensajes mas claros y experiencia publica mas pulida.
+
+### v1.4
+
+- Colaboracion ligera: comentarios o feedback sobre un board compartido.
+- Roles simples: dueno/editor/lector.
+- Biblioteca de boards: filtro, busqueda y orden por fecha o nombre.
+- Etiquetas o categorias: entrenamiento, rival, balon parado, transicion, etc.
 
 ## Licencia
 
