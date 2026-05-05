@@ -116,6 +116,7 @@ La URL sigue incluyendo `?tablero=<id>` para abrir directamente un tablero concr
 - Proyecto PHP liviano con frontend vanilla: PHP, HTML, CSS y JavaScript.
 - Sin frameworks y sin proceso de compilacion.
 - Base de datos MySQL con PDO.
+- Verificacion de ID Token de Google con PHP/OpenSSL y claves publicas JWKS de Google, sin Composer.
 - Sesion PHP aislada por aplicacion, configurable por variables de entorno.
 - Login con Google Identity Services.
 - Uso de `pointer events` para el drag and drop.

@@ -76,7 +76,7 @@ class SitioController extends MainController
             ], 422);
         }
 
-        $googleUser = $this->decodeGoogleIdToken($token);
+        $googleUser = $this->verifyGoogleIdToken($token);
 
         if (
             !$googleUser ||

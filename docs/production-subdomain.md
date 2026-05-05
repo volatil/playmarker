@@ -55,6 +55,8 @@ El `.htaccess` de la aplicacion niega el acceso directo a archivos y carpetas in
 
 En Google Cloud / Google Identity Services registra el subdominio final como origen autorizado del frontend. El `client_id` debe corresponder al subdominio exacto donde se mostrara el boton de acceso.
 
+El backend valida el ID Token con las claves publicas JWKS de Google. El PHP del servidor debe tener OpenSSL habilitado y alguna forma de descargar HTTPS (`https` stream wrapper, cURL o transporte TLS por sockets); si no puede verificar la firma, el login falla cerrado.
+
 ## 5. Checklist de validacion
 
 - `GET /health` responde con diagnostico publico minimo: `ok=true`, `app="playmarker"`, `env` y `googleClientIdConfigured`
