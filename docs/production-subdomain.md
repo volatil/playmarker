@@ -4,7 +4,7 @@ Esta aplicacion puede vivir en un subdominio del sitio principal sin compartir s
 
 ## 1. Variables de entorno
 
-Parte desde [.env.example](/C:/Users/paulo/Proyectos/playmarker/.env.example) y crea un `.env` real en el servidor.
+Parte desde [.env.example](/C:/Users/paulo/Proyectos/playmarker/.env.example) y crea un `.env` real en el servidor. Si el hosting lo permite, guardalo fuera del webroot y carga sus valores desde el entorno del servidor.
 
 Con un unico `.env` que contiene bloques `DEVELOP` y `PRODUCTION`, define siempre `APP_ENV=production` en el servidor para no depender de la deteccion por host.
 
@@ -20,6 +20,8 @@ Variables clave:
 - `APP_SESSION_SECURE=1` cuando el subdominio corra sobre HTTPS
 
 La app resuelve primero las variables `*_PRODUCTION` y solo despues usa las variantes compartidas sin sufijo. No toma automaticamente credenciales ni client IDs del bloque `DEVELOP`.
+
+Produccion debe publicarse sobre HTTPS. Si el sitio termina TLS en un proxy o balanceador, reenvia `X-Forwarded-Proto=https` para que la cookie segura se calcule correctamente.
 
 ## 2. Base de datos
 
@@ -40,14 +42,14 @@ Ejemplo de vhost para `playmarker.midominio.com`:
     DocumentRoot "/var/www/playmarker"
 
     <Directory "/var/www/playmarker">
-        Options Indexes FollowSymLinks
+        Options -Indexes +FollowSymLinks
         AllowOverride All
         Require all granted
     </Directory>
 </VirtualHost>
 ```
 
-Si el sitio ya termina en HTTPS por proxy o balanceador, asegurate de reenviar `X-Forwarded-Proto=https` para que la cookie segura se calcule bien.
+El `.htaccess` de la aplicacion niega el acceso directo a archivos y carpetas internas como `.env`, `logs.log`, `db/`, `docs/`, `.github/` y `.agents/`.
 
 ## 4. Google Identity
 
@@ -55,7 +57,7 @@ En Google Cloud / Google Identity Services registra el subdominio final como ori
 
 ## 5. Checklist de validacion
 
-- `GET /health` responde con `ok=true`, `app="playmarker"`, `env` y `googleClientIdConfigured`
+- `GET /health` responde con diagnostico publico minimo: `ok=true`, `app="playmarker"`, `env` y `googleClientIdConfigured`
 - `APP_ENV` esta definido en `production`
 - Login con Google crea o actualiza una fila en `usuarios`
 - Crear, guardar, renombrar y eliminar boards persiste en `tablas`

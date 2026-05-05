@@ -28,6 +28,7 @@ const PLACEMENT_BOUNDS = {
 const appShell = document.querySelector(".app-shell");
 const PAGE_MODE = appShell?.dataset.pageMode || "landing";
 const IS_AUTHENTICATED = appShell?.dataset.isAuthenticated === "1";
+const CSRF_TOKEN = String(appShell?.dataset.csrfToken || "").trim();
 const INITIAL_BOARD_ID = String(appShell?.dataset.initialBoardId || "").trim();
 const TABLAS_ENDPOINT = appShell?.dataset.tablasEndpoint || "";
 const SHARED_TABLA_TEMPLATE = appShell?.dataset.sharedTablaTemplate || "";
@@ -368,12 +369,19 @@ async function markBoardOpened(boardId) {
 }
 
 async function apiFetch(url, options = {}) {
+  const method = String(options.method || "GET").toUpperCase();
+  const headers = {
+    "Content-Type": "application/json; charset=UTF-8",
+    ...(options.headers || {}),
+  };
+
+  if (["POST", "PUT", "DELETE"].includes(method) && CSRF_TOKEN) {
+    headers["X-CSRF-Token"] = CSRF_TOKEN;
+  }
+
   const response = await fetch(url, {
     credentials: "same-origin",
-    headers: {
-      "Content-Type": "application/json; charset=UTF-8",
-      ...(options.headers || {}),
-    },
+    headers,
     ...options,
   });
 

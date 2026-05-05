@@ -13,8 +13,13 @@ class TablasController extends MainController
 
     public function index(): void
     {
-        $user = $this->requireAuthenticatedUser();
         $method = strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'));
+
+        if ($method === 'POST') {
+            require_csrf_token();
+        }
+
+        $user = $this->requireAuthenticatedUser();
 
         if ($method === 'GET') {
             $this->renderJson([
@@ -38,8 +43,13 @@ class TablasController extends MainController
 
     public function resource(string $boardId): void
     {
-        $user = $this->requireAuthenticatedUser();
         $method = strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'));
+
+        if (in_array($method, ['PUT', 'DELETE'], true)) {
+            require_csrf_token();
+        }
+
+        $user = $this->requireAuthenticatedUser();
 
         if ($method === 'PUT') {
             $payload = $this->readJsonPayload();
@@ -80,13 +90,15 @@ class TablasController extends MainController
 
     public function open(string $boardId): void
     {
-        $user = $this->requireAuthenticatedUser();
         $method = strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'POST'));
 
         if ($method !== 'POST') {
             $this->methodNotAllowed(['POST']);
         }
 
+        require_csrf_token();
+
+        $user = $this->requireAuthenticatedUser();
         $board = $this->markBoardOpened((string) $user->id, $boardId);
 
         $this->renderJson([

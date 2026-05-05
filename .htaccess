@@ -1,11 +1,16 @@
 DirectoryIndex index.php
 
+Options -Indexes
+
 RewriteEngine On
+
+RewriteRule ^(?:\.github|\.agents|db|docs)(?:/|$) - [F,L]
+RewriteRule ^(?:\.env|logs\.log|skills-lock\.json)$ - [F,L]
 
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^(.*)$ index.php [QSA,L]
 
-<FilesMatch "^\.">
+<FilesMatch "(^\.|^logs\.log$|^skills-lock\.json$|\.sql$)">
     Require all denied
 </FilesMatch>

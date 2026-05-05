@@ -12,7 +12,7 @@ C:\xampp\apache\conf\extra\httpd-xampp.conf
 
 en "C:\xampp\apache\conf\httpd.conf" agrega
 <Directory "C:/Proyectos/playmarker">
-    Options Indexes FollowSymLinks
+    Options -Indexes +FollowSymLinks
     AllowOverride All
     Require all granted
 </Directory>
@@ -57,10 +57,10 @@ Como es un proyecto PHP liviano, lo ideal es ejecutarlo en Apache/XAMPP o con el
 ### Opcion 1: servidor embebido de PHP
 
 ```powershell
-php -S localhost:8000
+php -S localhost:8000 router.php
 ```
 
-Luego abre `http://localhost:8000`.
+Luego abre `http://localhost:8000`. El router local solo sirve archivos publicos de `assets/` y manda el resto de solicitudes por `index.php`.
 
 ### Opcion 2: Apache/XAMPP
 
@@ -136,6 +136,8 @@ La URL sigue incluyendo `?tablero=<id>` para abrir directamente un tablero concr
 - `APP_SESSION_SECURE`: usa `1` en HTTPS.
 
 Cuando PlayMarker resuelve la configuracion toma primero la variable del entorno activo, luego la variable compartida sin sufijo y, si ninguna existe, usa el valor por defecto del codigo. Un valor faltante o vacio en desarrollo no debe heredar automaticamente el secreto de produccion.
+
+En produccion usa siempre `APP_ENV=production`, `APP_SESSION_SECURE=1` bajo HTTPS y, si el hosting lo permite, guarda el `.env` fuera del webroot. El endpoint publico `/health` entrega solo diagnostico minimo (`ok`, nombre de app, entorno y si hay client ID de Google configurado), no secretos.
 
 ## Responsividad
 

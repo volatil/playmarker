@@ -32,6 +32,7 @@ class SitioController extends MainController
         $this->render('sitio/home.php', [
             'meta' => $this->metaDefaults(),
             'user' => current_user(),
+            'csrfToken' => is_logged_in() ? csrf_token() : '',
             'googleClientId' => google_client_id(),
             'requestedBoardId' => $requestedBoardId,
             'pageMode' => $pageMode,
@@ -114,6 +115,9 @@ class SitioController extends MainController
             ], 500);
         }
 
+        session_regenerate_id(true);
+        $csrfToken = csrf_token();
+
         $_SESSION['user'] = (object) [
             'id' => (string) $user['id'],
             'google_sub' => (string) $user['google_sub'],
@@ -134,12 +138,29 @@ class SitioController extends MainController
             'success' => true,
             'message' => 'Acceso autorizado.',
             'user' => $_SESSION['user'],
+            'csrfToken' => $csrfToken,
         ]);
     }
 
     public function logout(): void
     {
-        unset($_SESSION['user']);
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Allow: POST');
+            $this->renderJson([
+                'success' => false,
+                'message' => 'Metodo no permitido.',
+            ], 405);
+        }
+
+        require_csrf_token();
+
+        $_SESSION = [];
+
+        if (ini_get('session.use_cookies')) {
+            setcookie(session_name(), '', session_cookie_options());
+        }
+
+        session_destroy();
         header('Location: ' . app_url('/'));
         exit;
     }

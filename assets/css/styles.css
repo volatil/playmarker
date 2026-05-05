@@ -296,6 +296,10 @@ h2 {
   gap: 12px;
 }
 
+.session-card form {
+  margin: 0;
+}
+
 .session-user {
   gap: 12px;
   min-width: 0;

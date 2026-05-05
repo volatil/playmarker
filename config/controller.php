@@ -59,6 +59,32 @@ date_default_timezone_set('America/Santiago');
 ini_set('log_errors', 'On');
 ini_set('error_log', APP_ROOT . '/logs.log');
 
+function send_security_headers(): void
+{
+    if (headers_sent()) {
+        return;
+    }
+
+    header('X-Content-Type-Options: nosniff');
+    header('Referrer-Policy: strict-origin-when-cross-origin');
+    header('X-Frame-Options: SAMEORIGIN');
+    header('Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()');
+    header(
+        "Content-Security-Policy: default-src 'self'; " .
+        "base-uri 'self'; " .
+        "frame-ancestors 'self'; " .
+        "form-action 'self'; " .
+        "img-src 'self' https: data:; " .
+        "script-src 'self' 'unsafe-inline' https://accounts.google.com; " .
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " .
+        "font-src 'self' https://fonts.gstatic.com; " .
+        "connect-src 'self' https://accounts.google.com; " .
+        "frame-src https://accounts.google.com"
+    );
+}
+
+send_security_headers();
+
 spl_autoload_register(function (string $class): void {
     $paths = [
         APP_ROOT . "/controllers/$class.php",
@@ -212,7 +238,7 @@ function configure_session(): void
     $sessionPath = app_base_path();
     $cookiePath = $sessionPath === '' ? '/' : $sessionPath . '/';
     $sessionDomain = trim((string) env_value('APP_SESSION_DOMAIN', ''));
-    $sameSite = env_value('APP_SESSION_SAMESITE', 'Lax') ?? 'Lax';
+    $sameSite = normalized_session_same_site();
     $secureCookie = env_flag('APP_SESSION_SECURE', request_is_https());
     $cookieParams = [
         'lifetime' => 0,
@@ -233,6 +259,86 @@ function configure_session(): void
 }
 
 configure_session();
+
+function normalized_session_same_site(): string
+{
+    $sameSite = strtolower(trim((string) env_value('APP_SESSION_SAMESITE', 'Lax')));
+
+    return match ($sameSite) {
+        'strict' => 'Strict',
+        'none' => 'None',
+        default => 'Lax',
+    };
+}
+
+function session_cookie_options(): array
+{
+    $sessionPath = app_base_path();
+    $cookiePath = $sessionPath === '' ? '/' : $sessionPath . '/';
+    $sessionDomain = trim((string) env_value('APP_SESSION_DOMAIN', ''));
+    $cookieParams = [
+        'expires' => time() - 3600,
+        'path' => $cookiePath,
+        'secure' => env_flag('APP_SESSION_SECURE', request_is_https()),
+        'httponly' => true,
+        'samesite' => normalized_session_same_site(),
+    ];
+
+    if ($sessionDomain !== '') {
+        $cookieParams['domain'] = $sessionDomain;
+    }
+
+    return $cookieParams;
+}
+
+function csrf_token(): string
+{
+    $token = $_SESSION['csrf_token'] ?? null;
+
+    if (!is_string($token) || $token === '') {
+        $token = bin2hex(random_bytes(32));
+        $_SESSION['csrf_token'] = $token;
+    }
+
+    return $token;
+}
+
+function csrf_token_from_request(): string
+{
+    $headerToken = trim((string) ($_SERVER['HTTP_X_CSRF_TOKEN'] ?? ''));
+
+    if ($headerToken !== '') {
+        return $headerToken;
+    }
+
+    return trim((string) ($_POST['csrf_token'] ?? ''));
+}
+
+function csrf_token_is_valid(): bool
+{
+    $sessionToken = $_SESSION['csrf_token'] ?? null;
+    $requestToken = csrf_token_from_request();
+
+    return is_string($sessionToken) &&
+        $sessionToken !== '' &&
+        $requestToken !== '' &&
+        hash_equals($sessionToken, $requestToken);
+}
+
+function require_csrf_token(): void
+{
+    if (csrf_token_is_valid()) {
+        return;
+    }
+
+    http_response_code(403);
+    header('Content-Type: application/json; charset=UTF-8');
+    echo json_encode([
+        'success' => false,
+        'message' => 'Token CSRF invalido o ausente.',
+    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    exit;
+}
 
 function google_client_id(): string
 {

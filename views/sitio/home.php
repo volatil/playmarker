@@ -1,12 +1,14 @@
 <?php
 $isAuthenticated = isset($user) && is_object($user);
 $safeGoogleClientId = htmlspecialchars($googleClientId ?? '', ENT_QUOTES, 'UTF-8');
+$safeCsrfToken = $isAuthenticated ? htmlspecialchars((string) ($csrfToken ?? ''), ENT_QUOTES, 'UTF-8') : '';
 $pageMode = ($pageMode ?? 'landing') === 'board' ? 'board' : 'landing';
 ?>
 <div
   class="app-shell"
   data-page-mode="<?= htmlspecialchars($pageMode, ENT_QUOTES, 'UTF-8') ?>"
   data-is-authenticated="<?= $isAuthenticated ? '1' : '0' ?>"
+  data-csrf-token="<?= $safeCsrfToken ?>"
   data-initial-board-id="<?= htmlspecialchars((string) ($requestedBoardId ?? ''), ENT_QUOTES, 'UTF-8') ?>"
   data-tablas-endpoint="<?= htmlspecialchars(app_url('/api/tablas'), ENT_QUOTES, 'UTF-8') ?>"
   data-shared-tabla-template="<?= htmlspecialchars(app_url('/api/tablas/__TABLA_ID__/shared'), ENT_QUOTES, 'UTF-8') ?>"
@@ -98,7 +100,10 @@ $pageMode = ($pageMode ?? 'landing') === 'board' ? 'board' : 'landing';
           </div>
         </div>
 
-        <a class="ghost-button logout-button" href="<?= htmlspecialchars(app_url('/logout'), ENT_QUOTES, 'UTF-8') ?>">Cerrar sesion</a>
+        <form action="<?= htmlspecialchars(app_url('/logout'), ENT_QUOTES, 'UTF-8') ?>" method="post">
+          <input type="hidden" name="csrf_token" value="<?= $safeCsrfToken ?>">
+          <button class="ghost-button logout-button" type="submit">Cerrar sesion</button>
+        </form>
       </div>
     <?php else: ?>
       <div class="login-card login-card--sidebar">
