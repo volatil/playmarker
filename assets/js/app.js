@@ -1,5 +1,7 @@
 const POSITION_OPTIONS = ["arquero", "defensa", "medio", "delantero"];
 const BOARD_QUERY_KEY = "tablero";
+const MAX_BOARDS_PER_USER = 10;
+const MAX_PLAYERS_PER_BOARD = 22;
 
 const DEFAULT_POSITION = {
   pitch: {
@@ -486,6 +488,10 @@ function getActivePlayers() {
   return activeBoard ? activeBoard.players : [];
 }
 
+function getEditableBoardCount() {
+  return state.boards.filter((board) => board.canEdit).length;
+}
+
 function getActivePlayerZoneCounts() {
   return getActivePlayers().reduce(
     (counts, player) => {
@@ -598,6 +604,11 @@ function handleFormSubmit(event) {
     }));
     state.selectedPlayerId = payload.id;
   } else {
+    if (getActivePlayers().length >= MAX_PLAYERS_PER_BOARD) {
+      showError(`Maximo ${MAX_PLAYERS_PER_BOARD} jugadores por tablero.`);
+      return;
+    }
+
     const { x, y } = getNextSpawnPosition(payload.team);
     const newPlayer = {
       id: createEntityId("p"),
@@ -704,6 +715,12 @@ function handleResetBoard() {
 
 async function handleCreateBoard() {
   if (!state.isAuthenticated || state.isSaving || state.isLoading) {
+    return;
+  }
+
+  if (getEditableBoardCount() >= MAX_BOARDS_PER_USER) {
+    setSaveStatus(`Maximo ${MAX_BOARDS_PER_USER} tableros por cuenta.`, "error");
+    render();
     return;
   }
 
@@ -1065,16 +1082,24 @@ function renderBoardVisibility() {
 function renderActionStates() {
   const activeBoard = getActiveBoard();
   const canMutate = !state.isLoading && canEditActiveBoard();
-  const canCreate = state.isAuthenticated && !state.isLoading && !state.isSaving;
+  const hasReachedBoardLimit = getEditableBoardCount() >= MAX_BOARDS_PER_USER;
+  const hasReachedPlayerLimit = getActivePlayers().length >= MAX_PLAYERS_PER_BOARD;
+  const isCreatingPlayer = !state.selectedPlayerId;
+  const canCreate = state.isAuthenticated && !state.isLoading && !state.isSaving && !hasReachedBoardLimit;
   const canSave = canMutate && !state.isSaving && Boolean(activeBoard?.isDirty || activeBoard?.isNew);
   const canToggleVisibility = canMutate && !state.isSaving && !state.isUpdatingVisibility && !activeBoard?.isNew;
+  const canSubmitPlayer = canMutate && !state.isSaving && (!isCreatingPlayer || !hasReachedPlayerLimit);
 
   elements.saveBoardButton.disabled = !canSave;
   elements.addBoardButton.disabled = !canCreate;
+  elements.addBoardButton.title = hasReachedBoardLimit ? `Maximo ${MAX_BOARDS_PER_USER} tableros por cuenta.` : "";
   elements.renameBoardButton.disabled = !canMutate || state.isSaving;
   elements.deleteBoardButton.disabled = !canMutate || state.isSaving;
   elements.resetBoardButton.disabled = !canMutate || state.isSaving;
-  elements.submitButton.disabled = !canMutate || state.isSaving;
+  elements.submitButton.disabled = !canSubmitPlayer;
+  elements.submitButton.title = isCreatingPlayer && hasReachedPlayerLimit
+    ? `Maximo ${MAX_PLAYERS_PER_BOARD} jugadores por tablero.`
+    : "";
   elements.deleteButton.disabled = !canMutate || state.isSaving || !state.selectedPlayerId;
   elements.cancelEditButton.disabled = !canMutate || state.isSaving;
   elements.playerName.disabled = !canMutate || state.isSaving;

@@ -5,6 +5,8 @@ declare(strict_types=1);
 class TablasController extends MainController
 {
     private const MAX_BOARD_NAME_LENGTH = 64;
+    private const MAX_BOARDS_PER_USER = 10;
+    private const MAX_PLAYERS_PER_BOARD = 22;
     private const POSITION_OPTIONS = ['arquero', 'defensa', 'medio', 'delantero'];
     private const TEAM_OPTIONS = ['home', 'away'];
     private const ZONE_OPTIONS = ['pitch', 'bench'];
@@ -175,8 +177,30 @@ class TablasController extends MainController
         return $boards;
     }
 
+    private function countActiveBoards(string $userId): int
+    {
+        $statement = db_connection()->prepare(
+            'SELECT COUNT(*)
+            FROM tablas
+            WHERE usuario_id = :usuario_id
+              AND eliminado_en IS NULL'
+        );
+        $statement->execute([
+            'usuario_id' => $userId,
+        ]);
+
+        return (int) $statement->fetchColumn();
+    }
+
     private function createBoard(string $userId, array $payload): array
     {
+        if ($this->countActiveBoards($userId) >= self::MAX_BOARDS_PER_USER) {
+            $this->renderJson([
+                'success' => false,
+                'message' => 'Maximo 10 tableros por cuenta.',
+            ], 422);
+        }
+
         $metadata = $this->normalizeBoardMetadataPayload($payload, true, false);
         $encodedState = $this->normalizeBoardStatePayload($payload, $metadata['nombre']);
         $boardId = app_uuid_v4();
@@ -464,7 +488,7 @@ class TablasController extends MainController
 
             $currentState['name'] = $boardName;
 
-            return $this->encodeBoardState($this->normalizeBoardState($boardName, $currentState));
+            return $this->encodeBoardState($this->normalizeBoardState($boardName, $currentState, false));
         }
 
         return $this->normalizeBoardStatePayload($payload, $boardName);
@@ -516,7 +540,7 @@ class TablasController extends MainController
         ], 422);
     }
 
-    private function normalizeBoardState(string $boardName, array $state): array
+    private function normalizeBoardState(string $boardName, array $state, bool $enforcePlayerLimit = true): array
     {
         $playersInput = $state['players'] ?? null;
 
@@ -524,6 +548,13 @@ class TablasController extends MainController
             $this->renderJson([
                 'success' => false,
                 'message' => 'El estado debe incluir una lista de jugadores.',
+            ], 422);
+        }
+
+        if ($enforcePlayerLimit && count($playersInput) > self::MAX_PLAYERS_PER_BOARD) {
+            $this->renderJson([
+                'success' => false,
+                'message' => 'Maximo 22 jugadores por tablero.',
             ], 422);
         }
 
